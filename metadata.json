@@ -1,0 +1,10 @@
+{
+  "name": "Remix Raj Expo Digitals Server 916(Encrypted)",
+  "description": "Professional multi-format analytics for PDF, Word, Excel, and PowerPoint. Calculate page/slide counts and printing costs with a high-performance UI.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default Deny-All Catch-All Security Gate
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation for Calculation object
+    function isValidCalculation(data) {
+      return data.keys().hasAll(['id', 'name', 'createdAt', 'totalCount', 'totalSheets', 'totalSingleSidedPrice', 'totalDoubleSidedPrice', 'files', 'userId']) 
+        && data.keys().size() == 9
+        && data.id is string
+        && data.id.size() <= 128
+        && data.name is string
+        && data.name.size() <= 200
+        && data.createdAt == request.time
+        && data.totalCount is number
+        && data.totalCount >= 0
+        && data.totalSheets is number
+        && data.totalSheets >= 0
+        && data.totalSingleSidedPrice is number
+        && data.totalSingleSidedPrice >= 0
+        && data.totalDoubleSidedPrice is number
+        && data.totalDoubleSidedPrice >= 0
+        && data.files is list
+        && data.userId == request.auth.uid;
+    }
+
+    // Validation for Presets object
+    function isValidPreset(data) {
+      return data.keys().hasAll(['userId', 'singleSidedCost', 'doubleSidedCost', 'separateOrientations', 'pagesPerSide', 'updatedAt']) 
+        && data.keys().size() == 6
+        && data.userId == request.auth.uid
+        && data.singleSidedCost is number
+        && data.singleSidedCost >= 0
+        && data.doubleSidedCost is number
+        && data.doubleSidedCost >= 0
+        && data.separateOrientations is bool
+        && data.pagesPerSide is number
+        && data.pagesPerSide >= 1
+        && data.updatedAt == request.time;
+    }
+
+    // Validation for CentralRecord
+    function isValidCentralRecord(data) {
+      return data.keys().hasAll(['recordId', 'recordType', 'title', 'createdAt', 'updatedAt', 'status', 'userId'])
+        && data.userId == request.auth.uid
+        && data.recordId is string
+        && data.recordType is string
+        && data.title is string
+        && data.status is string;
+    }
+
+    // Validation for CentralRelationship
+    function isValidCentralRelationship(data) {
+      return data.keys().hasAll(['relationshipId', 'fromRecordId', 'toRecordId', 'relationshipType', 'confidence', 'userId'])
+        && data.userId == request.auth.uid
+        && data.relationshipId is string
+        && data.fromRecordId is string
+        && data.toRecordId is string
+        && data.relationshipType is string
+        && data.confidence is number;
+    }
+
+    // User collections matching paths
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /calculations/{calcId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidCalculation(request.resource.data) && isValidId(calcId);
+        allow delete: if isOwner(userId) && isValidId(calcId);
+        allow update: if false; // Calculations are immutable historical records
+      }
+
+      match /presets/{presetId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidPreset(request.resource.data) && isValidId(presetId);
+        allow delete: if isOwner(userId) && isValidId(presetId);
+      }
+
+      match /central_records/{recordId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidCentralRecord(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /central_relationships/{relId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidCentralRelationship(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

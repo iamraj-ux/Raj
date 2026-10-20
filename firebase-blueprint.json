@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "Calculation": {
+      "title": "Document Calculation",
+      "description": "A saved batch of multi-format document analytics counts and prices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "totalCount": { "type": "number" },
+        "totalSheets": { "type": "number" },
+        "totalSingleSidedPrice": { "type": "number" },
+        "totalDoubleSidedPrice": { "type": "number" },
+        "files": {
+          "type": "array",
+          "description": "Serialized list of DocFileData records"
+        },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "name", "createdAt", "totalCount", "totalSheets", "totalSingleSidedPrice", "totalDoubleSidedPrice", "files", "userId"]
+    },
+    "Preset": {
+      "title": "User Presets",
+      "description": "User configuration default values for prices and settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "singleSidedCost": { "type": "number" },
+        "doubleSidedCost": { "type": "number" },
+        "separateOrientations": { "type": "boolean" },
+        "pagesPerSide": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "singleSidedCost", "doubleSidedCost", "separateOrientations", "pagesPerSide", "updatedAt"]
+    },
+    "CentralRecord": {
+      "title": "Canonical Central Record",
+      "description": "Normalized extensible central record model for all files, media, contacts, and memories",
+      "type": "object",
+      "properties": {
+        "recordId": { "type": "string" },
+        "recordType": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "eventDate": { "type": "string" },
+        "tags": { "type": "array" },
+        "status": { "type": "string" },
+        "version": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["recordId", "recordType", "title", "createdAt", "updatedAt", "status", "userId"]
+    },
+    "CentralRelationship": {
+      "title": "Canonical Central Relationship",
+      "description": "Directional first-class relationship link between canonical records with confidence scoring",
+      "type": "object",
+      "properties": {
+        "relationshipId": { "type": "string" },
+        "fromRecordId": { "type": "string" },
+        "toRecordId": { "type": "string" },
+        "relationshipType": { "type": "string" },
+        "confidence": { "type": "number" },
+        "source": { "type": "string" },
+        "bidirectional": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["relationshipId", "fromRecordId", "toRecordId", "relationshipType", "confidence", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/calculations/{calcId}": {
+      "schema": "Calculation",
+      "description": "Saved document analytics runs for the authenticated user"
+    },
+    "/users/{userId}/presets/default": {
+      "schema": "Preset",
+      "description": "Persistent default user printing pricing & layout settings"
+    },
+    "/users/{userId}/central_records/{recordId}": {
+      "schema": "CentralRecord",
+      "description": "Canonical central records storage for files, media, notes, and contacts"
+    },
+    "/users/{userId}/central_relationships/{relId}": {
+      "schema": "CentralRelationship",
+      "description": "Directional relationship links between records in the knowledge graph"
+    }
+  }
+}
