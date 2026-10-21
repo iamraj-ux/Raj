@@ -99,12 +99,12 @@ export const ALL_APPS: AppDefinition[] = [
   },
   {
     id: 'cloudinary_db',
-    name: 'Cloudinary Cloud Database & Storage',
-    shortName: 'Cloud Store',
+    name: 'Cloudinary File Manager & Smart Tags',
+    shortName: 'Cloud Manager',
     icon: FolderGit2,
     color: 'text-cyan-300 border-cyan-400/50 bg-cyan-950/80',
-    badge: 'Cloud Vault',
-    description: 'Unsigned browser media storage & text database viewer.'
+    badge: 'Smart Tags',
+    description: 'Browse, search, upload, tag, AI prompts, and sync to GitHub without opening Cloudinary.'
   },
   {
     id: 'google_drive',
