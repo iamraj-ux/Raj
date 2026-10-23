@@ -21,6 +21,7 @@ import { getStoredMediaItems, RajExpoMediaItem } from './mediaStorageService';
 import { getStoredKnowledgeGraph } from './knowledgeGraph';
 import { findRelevantDriveAssets } from './googleDriveVault';
 import { generateNatashaKnowledgeResponse } from './natashaIntelligence';
+import { filterContacts, generateNatashaPersonaSummary } from './contactDirectoryService';
 
 export interface ConversationContext {
   lastIntent?: string;
@@ -465,6 +466,56 @@ export const processNatashaTurn = (
       showSuggestions: true,
       context: currentContext
     };
+  }
+
+  // Contact Directory Queries (867+ contacts)
+  const isContactSearchIntent = 
+    lower.startsWith('find contact') || 
+    lower.startsWith('search contact') || 
+    lower.startsWith('who is ') || 
+    lower.startsWith('contact for ') ||
+    lower.startsWith('phone of ') ||
+    lower.startsWith('number for ') ||
+    lower.startsWith('number of ') ||
+    ((lower.includes('contact') || lower.includes('phone') || lower.includes('number')) && lower.length > 4);
+
+  if (isContactSearchIntent) {
+    const cleanSearch = lower
+      .replace(/^(find contact|search contact|who is|contact for|phone of|number for|number of|contact|phone|number)/g, '')
+      .replace(/[?!.]/g, '')
+      .trim();
+
+    if (cleanSearch.length >= 2) {
+      const matchedContacts = filterContacts({ globalQuery: cleanSearch });
+      if (matchedContacts.length > 0) {
+        const top = matchedContacts[0];
+        currentContext.lastIntent = "find_contact";
+        currentContext.lastReferencedContacts = matchedContacts.slice(0, 3).map(c => ({
+          name: c.name,
+          phone: c.phones[0] || 'No phone listed'
+        }));
+
+        const primaryPhone = top.phones[0] || 'No phone listed';
+        const role = [top.title, top.organization].filter(Boolean).join(' at ');
+        const reply = `Yep, found in records Boss:\n` +
+          `• ${top.name}${role ? ` (${role})` : ''} [${top.relationship_type}]\n` +
+          `• Phone: ${primaryPhone}${top.emails[0] ? ` | Email: ${top.emails[0]}` : ''}` +
+          (matchedContacts.length > 1 ? `\n(Found ${matchedContacts.length} matching contacts)` : '');
+
+        return {
+          reply,
+          suggestions: [
+            'Tell me briefly',
+            'Rephrase my last input',
+            `WhatsApp ${top.name}`,
+            'Copy Number',
+            'Open Contact Directory'
+          ],
+          showSuggestions: true,
+          context: currentContext
+        };
+      }
+    }
   }
 
   // Fallback to Knowledge Engine

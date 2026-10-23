@@ -206,16 +206,16 @@ export function getStoredPeopleDatabase(): PersonRecord[] {
   try {
     const raw = localStorage.getItem(PEOPLE_STORAGE_KEY);
     if (!raw) {
-      return [];
+      return SEED_PEOPLE_RECORDS;
     }
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return SEED_PEOPLE_RECORDS;
     }
     return parsed;
   } catch (err) {
     console.error('Failed to load people database:', err);
-    return [];
+    return SEED_PEOPLE_RECORDS;
   }
 }
 
