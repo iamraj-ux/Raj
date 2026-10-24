@@ -62,7 +62,11 @@ export const logActivity = (
     const existing = getStoredActivities();
     const updated = [newItem, ...existing].slice(0, 300); // keep up to 300 entries
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('system-activity-logged', { detail: newItem }));
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('system-activity-logged', { detail: newItem }));
+      }, 0);
+    }
   } catch (err) {
     console.error('Failed to save activity:', err);
   }
@@ -73,7 +77,11 @@ export const logActivity = (
 export const clearAllActivities = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY);
-    window.dispatchEvent(new CustomEvent('system-activity-logged', { detail: null }));
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('system-activity-logged', { detail: null }));
+      }, 0);
+    }
   } catch (err) {
     console.error('Failed to clear activities:', err);
   }

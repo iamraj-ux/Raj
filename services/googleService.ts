@@ -76,23 +76,42 @@ export const setManualAccessToken = (token: string, userProfile?: { name?: strin
 
 // Google Auth Sign-in
 export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
+  if (isSigningIn) {
+    return null;
+  }
   try {
     isSigningIn = true;
     
     // Check if token already configured in session or account configurations
     const storedToken = sessionStorage.getItem('g_access_token');
-    if (storedToken) {
-      cachedAccessToken = storedToken;
+    const googleConfig = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('raj_expo_google_config_v1') || '{}') : {};
+    const existingToken = storedToken || (googleConfig?.isConfigured ? googleConfig?.accessToken : null);
+
+    if (existingToken) {
+      cachedAccessToken = existingToken;
       const user = {
         uid: 'boss-raj-local',
-        displayName: 'Boss Jonathan Raj',
-        email: 'raj@rajexpodigitals.com',
+        displayName: googleConfig?.userEmail ? googleConfig.userEmail.split('@')[0] : 'Boss Jonathan Raj',
+        email: googleConfig?.userEmail || 'raj@rajexpodigitals.com',
         photoURL: ''
       } as unknown as User;
-      return { user, accessToken: storedToken };
+      return { user, accessToken: existingToken };
     }
 
-    // Try popup if credentials exist, otherwise gracefully route to Account Configuration
+    const inIframe = typeof window !== 'undefined' && window.self !== window.top;
+
+    // Inside iframe sandboxes (e.g., AI Studio preview), Firebase signInWithPopup triggers 
+    // "INTERNAL ASSERTION FAILED: Pending promise was never set" due to postMessage/popup blocks.
+    // In iframe mode, directly open the Account Configuration Modal for safe token entry.
+    if (inIframe) {
+      console.info('[Google Auth] Running inside sandboxed container. Routing to clean Account Configuration.');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('open-account-config', { detail: { defaultTab: 'google' } }));
+      }
+      return null;
+    }
+
+    // Top-level window execution: attempt popup with full safety guards
     try {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -102,7 +121,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
         return { user: result.user, accessToken: cachedAccessToken };
       }
     } catch (firebaseErr: any) {
-      console.warn('Firebase popup unavailable in standalone mode:', firebaseErr?.message);
+      console.warn('Firebase popup unavailable or rejected:', firebaseErr?.message);
     }
 
     // Dispatch event to open Account Configuration Modal for token entry

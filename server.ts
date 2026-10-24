@@ -503,6 +503,137 @@ Format guidelines:
 });
 
 // ==========================================
+// LIVE NEWS & WEATHER PROXY ENDPOINTS (S8b/Attachment)
+// ==========================================
+
+interface NewsItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  source: string;
+  snippet?: string;
+}
+
+// In-memory cache for news feeds (10 min TTL)
+const newsCache: Record<string, { timestamp: number; data: NewsItem[] }> = {};
+
+function parseRssFeed(xmlText: string, defaultSource: string): NewsItem[] {
+  const items: NewsItem[] = [];
+  const itemMatches = xmlText.match(/<item[\s\S]*?<\/item>/gi) || [];
+  
+  for (const itemXml of itemMatches.slice(0, 15)) {
+    const titleMatch = itemXml.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
+    const linkMatch = itemXml.match(/<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i);
+    const pubDateMatch = itemXml.match(/<pubDate>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/pubDate>/i);
+    const descMatch = itemXml.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i);
+
+    let title = titleMatch ? titleMatch[1].trim() : '';
+    let link = linkMatch ? linkMatch[1].trim() : '';
+    let pubDate = pubDateMatch ? pubDateMatch[1].trim() : '';
+    let snippet = descMatch ? descMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+
+    if (title && link) {
+      items.push({
+        title,
+        link,
+        pubDate,
+        source: defaultSource,
+        snippet: snippet.slice(0, 180) + (snippet.length > 180 ? '...' : '')
+      });
+    }
+  }
+  return items;
+}
+
+app.get('/api/news', async (req: Request, res: Response) => {
+  const category = (req.query.category as string) || 'world';
+  const now = Date.now();
+
+  if (newsCache[category] && now - newsCache[category].timestamp < 10 * 60 * 1000) {
+    return res.json({
+      category,
+      cached: true,
+      lastUpdated: new Date(newsCache[category].timestamp).toISOString(),
+      items: newsCache[category].data
+    });
+  }
+
+  let feedUrls: { url: string; source: string }[] = [];
+
+  if (category === 'srilanka') {
+    feedUrls = [
+      { url: 'https://economynext.com/feed/', source: 'EconomyNext (Sri Lanka)' },
+      { url: 'https://island.lk/feed/', source: 'The Island (Colombo)' }
+    ];
+  } else if (category === 'ai') {
+    feedUrls = [
+      { url: 'https://techcrunch.com/category/artificial-intelligence/feed/', source: 'TechCrunch AI' },
+      { url: 'https://venturebeat.com/category/ai/feed/', source: 'VentureBeat AI' }
+    ];
+  } else {
+    // World news
+    feedUrls = [
+      { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', source: 'BBC World News' },
+      { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', source: 'NY Times World' }
+    ];
+  }
+
+  let collectedItems: NewsItem[] = [];
+
+  for (const feed of feedUrls) {
+    try {
+      const response = await fetch(feed.url, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+        },
+        signal: AbortSignal.timeout(7000)
+      });
+      if (response.ok) {
+        const text = await response.text();
+        const items = parseRssFeed(text, feed.source);
+        if (items.length > 0) {
+          collectedItems = items;
+          break;
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[News Proxy] Feed failed for ${feed.source}:`, err.message);
+    }
+  }
+
+  if (collectedItems.length > 0) {
+    newsCache[category] = { timestamp: now, data: collectedItems };
+    return res.json({
+      category,
+      cached: false,
+      lastUpdated: new Date(now).toISOString(),
+      items: collectedItems
+    });
+  }
+
+  return res.status(503).json({
+    category,
+    error: 'News feeds temporarily unreachable from network. Please check connectivity or refresh in a moment.',
+    items: []
+  });
+});
+
+app.get('/api/weather/colombo', async (_req: Request, res: Response) => {
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=6.9271&longitude=79.8612&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FColombo';
+    const resp = await fetch(url, { signal: AbortSignal.timeout(7000) });
+    if (!resp.ok) {
+      return res.status(resp.status).json({ error: 'Open-Meteo weather service error' });
+    }
+    const data = await resp.json();
+    res.json(data);
+  } catch (err: any) {
+    res.status(502).json({ error: 'Failed to retrieve weather data: ' + err.message });
+  }
+});
+
+// ==========================================
 // VITE DEV SERVER OR STATIC PRODUCTION
 // ==========================================
 

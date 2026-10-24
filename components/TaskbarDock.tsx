@@ -5,7 +5,7 @@ import {
   Users, Zap, Wrench, Calculator, Activity, Pin, PinOff, 
   Volume2, VolumeX, Lock, Unlock, Palette, ChevronUp, Clock, 
   ExternalLink, ShieldCheck, Check, Trash2, Search, Sliders, 
-  Eye, MousePointer
+  Eye, MousePointer, Cpu
 } from 'lucide-react';
 import { soundManager } from '../services/soundEffects';
 import { logActivity } from '../services/activityLogger';
@@ -27,6 +27,7 @@ export type AppId =
   | 'account_config'
   | 'enter_server'
   | 'lock_app'
+  | 'token_counter'
   | 'open_new_tab'
   | 'purge_data';
 
@@ -179,6 +180,15 @@ export const ALL_APPS: AppDefinition[] = [
     description: 'Full chronological system telemetry, user operations & sync events.'
   },
   {
+    id: 'token_counter',
+    name: 'Prompt Token Counter & Quota Monitor',
+    shortName: 'Token Counter',
+    icon: Cpu,
+    color: 'text-cyan-300 border-cyan-400/50 bg-cyan-950/80',
+    badge: 'Estimator',
+    description: 'Pre-flight check for AI Studio prompts: characters, words, tokens & honest quota audit.'
+  },
+  {
     id: 'lock_app',
     name: 'Lock / Unlock Mainframe Screen',
     shortName: 'Lock System',
@@ -224,6 +234,7 @@ export interface TaskbarDockProps {
   onOneTapSync?: () => void;
   onOpenNewTab?: () => void;
   onPurgeData?: () => void;
+  onOpenClockOverview?: () => void;
 }
 
 export const TaskbarDock: React.FC<TaskbarDockProps> = ({
@@ -237,7 +248,8 @@ export const TaskbarDock: React.FC<TaskbarDockProps> = ({
   syncPhase,
   onOneTapSync,
   onOpenNewTab,
-  onPurgeData
+  onPurgeData,
+  onOpenClockOverview
 }) => {
   const [pinnedAppIds, setPinnedAppIds] = useState<AppId[]>(() => {
     try {
@@ -270,20 +282,17 @@ export const TaskbarDock: React.FC<TaskbarDockProps> = ({
   const togglePin = (appId: AppId, e: React.MouseEvent) => {
     e.stopPropagation();
     soundManager.playClickSound();
-    setPinnedAppIds(prev => {
-      let next: AppId[];
-      if (prev.includes(appId)) {
-        next = prev.filter(id => id !== appId);
-        logActivity('TASKBAR', 'Unpinned App from Taskbar', `Unpinned: ${appId}`);
-      } else {
-        next = [...prev, appId];
-        logActivity('TASKBAR', 'Pinned App to Taskbar', `Pinned: ${appId}`);
-      }
-      try {
-        localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
+    const isPinned = pinnedAppIds.includes(appId);
+    const next = isPinned ? pinnedAppIds.filter(id => id !== appId) : [...pinnedAppIds, appId];
+    setPinnedAppIds(next);
+    try {
+      localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(next));
+    } catch {}
+    if (isPinned) {
+      logActivity('TASKBAR', 'Unpinned App from Taskbar', `Unpinned: ${appId}`);
+    } else {
+      logActivity('TASKBAR', 'Pinned App to Taskbar', `Pinned: ${appId}`);
+    }
   };
 
   const handleAudioToggle = (e: React.MouseEvent) => {
@@ -600,11 +609,22 @@ export const TaskbarDock: React.FC<TaskbarDockProps> = ({
               {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
             </button>
 
-            {/* Real-time Clock */}
-            <div className="hidden sm:flex flex-col items-end px-2 py-1 bg-slate-900/80 border border-slate-800 rounded-xl leading-tight">
-              <span className="text-[11px] font-black text-cyan-300">{currentTime}</span>
-              <span className="text-[8px] text-slate-400">{currentDate}</span>
-            </div>
+            {/* Real-time Clickable Clock (Daily Overview / Weather / News / Reminders) */}
+            <button
+              onClick={() => {
+                soundManager.playClickSound();
+                onOpenClockOverview?.();
+              }}
+              className="hidden sm:flex flex-col items-end px-3 py-1 bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/80 rounded-xl leading-tight transition-all cursor-pointer group shadow-sm active:scale-95 text-right"
+              title="Click to open Daily Overview: Colombo Weather, Live News & Reminders"
+              aria-label="Open Daily Overview Clock & Weather"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 group-hover:animate-ping" />
+                <span className="text-[11px] font-black text-cyan-300 group-hover:text-cyan-200">{currentTime}</span>
+              </div>
+              <span className="text-[8px] text-slate-400 group-hover:text-slate-300">{currentDate} • Asia/Colombo</span>
+            </button>
           </div>
 
         </div>

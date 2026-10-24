@@ -11,10 +11,11 @@ const rajExpoLogo = "/src/assets/images/raj_expo_logo_1780723511664.png";
 
 import { NatashaSystemBroadcast } from './components/NatashaSystemBroadcast';
 import { Lockscreen } from './components/Lockscreen';
+import { initAutoLock } from './services/securityService';
 import { NatashaPhraseOverlay } from './components/NatashaPhraseOverlay';
 import { logActivity } from './services/activityLogger';
 import { AllSystemActivitiesModal } from './components/AllSystemActivitiesModal';
-import { Activity, ExternalLink, FolderGit2, Zap, Upload, FolderArchive, FolderTree, Users, Wrench, Calculator, Folder, Sparkles, HardDrive, Eye } from 'lucide-react';
+import { Activity, ExternalLink, FolderGit2, Zap, Upload, FolderArchive, FolderTree, Users, Wrench, Calculator, Folder, Sparkles, HardDrive, Eye, Cpu, Clock } from 'lucide-react';
 import { NatashaButtonIntelModal } from './components/NatashaButtonIntelModal';
 import { resolveButtonIntel, BUTTON_INTEL_REGISTRY, type ButtonIntel } from './services/buttonIntelligenceService';
 
@@ -57,6 +58,9 @@ import { GitHubDatabasePanel } from './components/GitHubDatabasePanel';
 import { GitHubDatabaseModal } from './components/GitHubDatabaseModal';
 import { MediaUploadWithDescriptionModal } from './components/MediaUploadWithDescriptionModal';
 import { RajExpoMediaModal } from './components/RajExpoMediaModal';
+import { PromptTokenCounterModal } from './components/PromptTokenCounterModal';
+import { DailyOverviewClockModal } from './components/DailyOverviewClockModal';
+import { inspectCodeAssistantQuota } from './services/tokenMonitorService';
 import { 
   syncToGitHub, 
   buildDatabasePayload, 
@@ -177,6 +181,8 @@ function App() {
   const [isGoogleDriveModalOpen, setIsGoogleDriveModalOpen] = useState<boolean>(false);
   const [isAccountConfigOpen, setIsAccountConfigOpen] = useState<boolean>(false);
   const [accountConfigDefaultTab, setAccountConfigDefaultTab] = useState<'auth' | 'github' | 'google' | 'cloud'>('auth');
+  const [isTokenCounterOpen, setIsTokenCounterOpen] = useState<boolean>(false);
+  const [isClockOverviewOpen, setIsClockOverviewOpen] = useState<boolean>(false);
 
   // Natasha Button Intelligence Inspector States
   const [isInspectorModeActive, setIsInspectorModeActive] = useState<boolean>(false);
@@ -201,11 +207,12 @@ function App() {
     if (isActivitiesModalOpen) set.add('activities_log');
     if (isButtonIntelModalOpen) set.add('button_intel');
     if (isAccountConfigOpen) set.add('account_config');
+    if (isTokenCounterOpen) set.add('token_counter');
     return set;
   }, [
     isServerHubOpen, isPromptStudioOpen, isWallpaperSettingsOpen, isGoogleDriveModalOpen, isGooglePickerOpen,
     isWhatsAppViewerOpen, isCloudinaryDatabaseOpen, isPeopleDbModalOpen, isGitHubModalOpen, isToolHubModalOpen,
-    isPdfCounterModalOpen, isActivitiesModalOpen, isButtonIntelModalOpen, isAccountConfigOpen
+    isPdfCounterModalOpen, isActivitiesModalOpen, isButtonIntelModalOpen, isAccountConfigOpen, isTokenCounterOpen
   ]);
 
   const handleToggleApp = useCallback((appId: AppId) => {
@@ -247,6 +254,7 @@ function App() {
         case 'activities_log': setIsActivitiesModalOpen(true); break;
         case 'button_intel': setIsButtonIntelModalOpen(true); break;
         case 'account_config': setIsAccountConfigOpen(true); break;
+        case 'token_counter': setIsTokenCounterOpen(true); break;
       }
       logActivity('WINDOW_CONTROL', 'Launched Application', `Launched app: ${appId}`);
     }
@@ -389,6 +397,14 @@ function App() {
     soundManager.playLockSound();
     logActivity('LOCK_UNLOCK', 'Security Standby Locked', 'App Mainframe locked into Standby mode.', 'Natasha V.I. Guard active');
   }, [cycleAnimStyle]);
+
+  // 10-Minute Autolock Matrix (S3 Requirement: autolock=10min)
+  useEffect(() => {
+    const cleanup = initAutoLock(() => {
+      handleLockApp();
+    }, 10 * 60 * 1000);
+    return cleanup;
+  }, [handleLockApp]);
 
 
   const calculateSheetCount = useCallback((count: number, portraitCount: number, landscapeCount: number, separate: boolean, perSide: number): number => {
@@ -1330,6 +1346,42 @@ function App() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16 pt-4 sm:pt-0 relative"
         >
+          {/* PERSISTENT HOME-SCREEN TOP BARS: COLOMBO OVERVIEW & QUOTA MONITOR */}
+          <div className="flex flex-wrap justify-center gap-3 mb-4">
+            <button
+              onClick={() => {
+                soundManager.playClickSound();
+                setIsClockOverviewOpen(true);
+              }}
+              className="px-4 py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 border border-emerald-500/40 hover:border-emerald-400 text-xs font-mono transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.15)] group active:scale-95"
+              title="Click to open Daily Overview: Colombo Weather, Live News & Reminders"
+            >
+              <Clock className="w-3.5 h-3.5 text-emerald-400 group-hover:animate-spin-slow" />
+              <span className="text-[10px] text-slate-400 uppercase font-bold">Colombo 🇱🇰:</span>
+              <span className="text-[10px] font-bold text-emerald-300">Live Overview</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Weather & News
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                soundManager.playClickSound();
+                setIsTokenCounterOpen(true);
+              }}
+              className="px-4 py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-xs font-mono transition-all flex items-center gap-2.5 cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.15)] group active:scale-95"
+              title="Click to open Prompt Token Counter & Quota Monitor"
+            >
+              <Cpu className="w-3.5 h-3.5 text-cyan-400 group-hover:animate-pulse" />
+              <span className="text-[10px] text-slate-400 uppercase font-bold">Assistant Quota:</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                {inspectCodeAssistantQuota().statusLabel}
+              </span>
+              <span className="text-[10px] text-cyan-300 hidden sm:inline underline font-bold">
+                Token Counter
+              </span>
+            </button>
+          </div>
           <div className="absolute -top-12 -right-8 xl:-right-48 2xl:-right-64 hidden lg:block group z-50">
             <motion.div 
               initial={{ opacity: 0, x: 40 }}
@@ -1475,6 +1527,23 @@ function App() {
             singleSidedCost,
             doubleSidedCost
           }}
+        />
+
+        {/* PROMPT TOKEN COUNTER & QUOTA MONITOR MODAL */}
+        <PromptTokenCounterModal
+          isOpen={isTokenCounterOpen && !minimizedAppIds.has('token_counter')}
+          onClose={() => {
+            setIsTokenCounterOpen(false);
+            setMinimizedAppIds(prev => { const n = new Set(prev); n.delete('token_counter'); return n; });
+          }}
+        />
+
+        {/* DAILY OVERVIEW CLOCK, WEATHER, LIVE NEWS & REMINDERS MODAL */}
+        <DailyOverviewClockModal
+          isOpen={isClockOverviewOpen}
+          onClose={() => setIsClockOverviewOpen(false)}
+          currentTheme={customTheme}
+          onSelectTheme={handleSelectTheme}
         />
 
         {/* CANONICAL CATEGORIES 'CLICK-TO-GO-INSIDE' RECURSIVE EXPLORER MODAL */}
@@ -1708,6 +1777,7 @@ function App() {
           onOneTapSync={handleOneTapGitHubSync}
           onOpenNewTab={handleOpenInNewTab}
           onPurgeData={() => setIsPurgeConfirmOpen(true)}
+          onOpenClockOverview={() => setIsClockOverviewOpen(true)}
         />
 
         {/* WALLPAPER & SETTINGS STUDIO MODAL */}

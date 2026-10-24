@@ -25,6 +25,15 @@ S5 CONNECTORS+APPS (P1)
 Registry: Drive, Gmail, Calendar, Contacts, Tasks, Keep(if supported), Firebase, GitHub, WhatsApp. Each: ops, OAuth, test, status, sync (import|export|1-way→2-way, conflicts to me), errors, disconnect/reconnect. Min scopes. Unsupported → say so.
 Windows: WhatsApp, Gmail, Cloudinary, Firebase, GitHub, GCloud = status, linked contacts/tags, recent activity, quick actions, official site pages (new tab, verify each URL). Cloudinary: descriptions, ≤15 tags, metadata update, contact sync. Gmail: pick sender account → preview → confirm. Keep PDF Counter + QR Generator. APPGUIDE.md: per app what/where/fixes.
 
+## S5.1
+S5.1 CLOUDINARY WORKSPACE (P1; implement as the next k stage after S5 Connectors, or run S5.1 directly)
+Inspect existing Cloudinary UI, upload code, metadata APIs, and credentials/config first. Preserve current Cloudinary account, preset, backend endpoints, Firebase/GitHub setup, records, branding, and working features. Do not invent or replace IDs, presets, endpoints, or secrets. Patch only required files.
+One Cloudinary workspace with a single prominent master Sync button at the top. Below it, tabs: Files and Text. Both tabs share the same metadata workflow/options; only the content input differs. Files tab: file picker/upload area. Text tab: editable text content; do not show a file picker as required input.
+Fields in order: File/record name; Upload file (Files only); Description with AI Generate/Rewrite action; Tags section with manual Add tag, editable/removable chips, type-ahead related tag suggestions that can be tapped to add, plus AI Generate tags; Link contacts selector searching existing saved contacts. Show linked contact details and allow unlinking. Use existing contact records only; never fabricate.
+AI-generated tags must use the combined available context: name + description + explicitly linked contact details. Description AI may use name + linked contact details + text/file context where actually readable. Preserve user edits, deduplicate tags, and limit Cloudinary tags to its supported limit (max 15); explain/retain extra app-side labels if needed rather than silently losing them. If no compatible AI model is active, offer the existing model-settings fallback and keep manual editing usable.
+Sync button saves/syncs the current record and its file (if any), description, tags, linked-contact references, and metadata to the existing configured Cloudinary integration. Show real progress and per-item result; only report success after Cloudinary confirms and verify/read back metadata where supported. Handle retries, duplicate detection, upload/API failures, and unsaved edits safely. Do not make Sync a fake button or silently auto-upload on field changes. Existing app data remains authoritative unless current architecture specifies otherwise; retain record IDs and traceable Cloudinary asset IDs/URLs. Never expose secrets in client code/logs.
+Test Files and Text flows, manual tags, suggestions, AI generation, contact linking, sync success/failure/retry, persistence after reload, and mobile layout. Update CHECKLIST.md status honestly: Implemented is not Verified; no evidence = not Verified. No destructive cleanup.
+
 ## S6
 S6 WHATSAPP BUSINESS API (P2; code it even without creds)
 Backend only; tokens server-side.
@@ -53,6 +62,22 @@ S8b SHELL (P2)
 Windows: move/resize/min/max/close/snap/stack, positions saved. Top btns: Min, Max/Restore, Close, NewTab. Home top btn “Raj Expo Server” → same app in new tab. Mobile: fullscreen cards + switcher.
 Taskbar: Start, running apps, quick icons (WA, Gmail, Cloudinary, Firebase, GitHub, GCloud), clock (Asia/Colombo), weather, bell, unread. Start: search, pinned, recent, Lock, Restart. Lock screen: clock, date, weather, notifs, unread counts only.
 Context menu: right-click | long-press | Shift+F10. Mouse pad (pad.on=false desktop): move, tap=L, 2-tap=R, 2-finger scroll, pinch zoom, L/R btns, drag/resize/dock, speed, size. In-app cursor only (say so). Zoom btns + reset.
+
+## S8b.1
+S8b.1 Desktop + Start + Taskbar + Universal Modify
+HOME + START: Keep the existing wallpaper. Home screen shows only shortcuts/folders I choose. Start menu is the central searchable launcher for all registered apps, tools, and AI Studio projects; don’t clutter the taskbar with app icons or running apps. Right-click/long-press/Shift+F10 on Start entries offers valid actions: Open, Add shortcut to Home, Rename shortcut, Remove shortcut, Modify. Add/remove/rename must really work and persist. Removing a shortcut must NEVER delete its app, project, contacts, or data.
+
+FOLDERS + CONTEXT MENUS: Right-click/long-press empty home area to create a folder; allow rename and moving shortcuts in/out. Add relevant context menus to apps, shortcuts, folders, taskbar controls, clock/panels, using right-click, long-press, and Shift+F10. Show Modify where meaningful. Log user actions in the existing activity log.
+
+TASKBAR: Show only Start, touchpad/mouse controller, clock/date, sound/volume, and Light/Dark switch. Reuse existing theme/settings and persistence; do not create a duplicate settings or sync system.
+
+CLOCK PANEL: Clicking clock/date opens notifications, daily news headlines, current weather/forecast, provider/source and last-updated time. Use real existing integrations/APIs and permissions. Never fabricate news/weather or claim live data without confirmation. If unavailable, show a clear unavailable state and the exact missing permission/configuration.
+
+TOUCHPAD: Taskbar icon toggles an on-screen touchpad with visible in-app cursor. One tap = left-click; double tap = right-click. Support pointer movement, drag, scroll, explicit left/right-click controls, adjustable size/sensitivity, and a separate Move Touchpad mode so normal pointer use does not reposition it. Persist settings where supported. Clearly state this controls only the app UI; do not claim OS/other-app control unless a real supported host capability exists. Preserve normal scrolling and accessibility.
+
+UNIVERSAL MODIFY: Opens a panel for a natural-language change request targeting the selected item. Include AI-assisted prompt drafting/refining using the existing configured model AND manual prompt writing/editing. Provide Preview/Edit, Copy, and Send/Open using the existing AI Studio Code Assistant workflow. Show the exact final prompt and require my explicit confirmation before sending. Verify whether direct sending is genuinely supported. If not, do not pretend it was sent: copy the prompt and open the actual supported destination if available, then tell me to paste it. Never execute generated code automatically or bypass existing approvals, security rules, or diff limits.
+
+PERSISTENCE + TESTS: Use existing storage/sync for shortcuts, folder names/layout, Start pins, theme, touchpad preferences and relevant panel settings. Test real create/rename/move/add/remove, ensure shortcut removal never deletes data, Start search/open, clean taskbar, theme persistence, clock panel real-data/unavailable states, touchpad gestures, Modify manual + AI prompt + preview + confirmed send/copy fallback, reload, and sync success/failure. Update checklist honestly: Implemented is not Verified; no test evidence = Not Verified. Ask before destructive changes; never add fake data, fake integrations, or fake success.
 
 ## S8c
 S8c LOOK+SETTINGS+ALERTS (P2)

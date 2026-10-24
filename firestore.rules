@@ -106,5 +106,10 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
     }
+
+    // AI Chat secure message streams keying by phone (+94...)
+    match /ai_chats/{phone} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

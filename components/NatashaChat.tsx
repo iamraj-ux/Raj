@@ -6,8 +6,18 @@ import {
   FolderOpen, Sparkles, Palette, Trash2, CheckCircle2, Play, Square,
   Upload, Film, FileCode, ExternalLink, Cloud, Download,
   Copy, Check, Share2, MessageCircle, Volume2, VolumeX,
-  Mic, MicOff, Wand2, Keyboard, Lightbulb, ArrowRight
+  Mic, MicOff, Wand2, Keyboard, Lightbulb, ArrowRight,
+  RefreshCw, CheckCheck, Clock, AlertTriangle
 } from 'lucide-react';
+import { 
+  save_chat_message, 
+  get_chat_context, 
+  sync_github, 
+  getChatSyncState, 
+  DEFAULT_BOSS_PHONE,
+  type CentralChatSyncState,
+  type ChatMessage
+} from '../services/chatStorageService';
 import { findRelevantDriveAssets } from '../services/googleDriveVault';
 import { getStoredKnowledgeGraph } from '../services/knowledgeGraph';
 import { getStoredMediaItems, RajExpoMediaItem } from '../services/mediaStorageService';
@@ -397,6 +407,8 @@ interface Message {
   timestamp: Date;
   isBinary?: boolean;
   attachment?: AttachedFileMeta;
+  status?: 'pending' | 'saved' | 'synced';
+  tags?: string[];
 }
 
 export const NatashaChat: React.FC = () => {
@@ -411,8 +423,14 @@ export const NatashaChat: React.FC = () => {
       text: 'Neural Link Established. Welcome back, Boss! NATASHA fully online. I can run tasks, open folders, trigger buttons, analyze files & videos (PSD, AI, CDR, PDF, MP4, etc.), and customize the entire app UI under your direct command. Tell me what you need, Boss!',
       sender: 'natasha',
       timestamp: new Date(),
+      status: 'saved',
+      tags: ['init', 'system']
     }
   ]);
+
+  const [syncState, setSyncState] = useState<CentralChatSyncState>(getChatSyncState());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [showCentralDbStorePrompt, setShowCentralDbStorePrompt] = useState(false);
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -592,16 +610,67 @@ export const NatashaChat: React.FC = () => {
     }
   }, [messages, isTyping, isOpen, isMinimized, isMaximized]);
 
+  // Central DB Sync Trigger
+  const triggerCentralSync = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await sync_github(DEFAULT_BOSS_PHONE);
+      if (res.success) {
+        setMessages(prev => prev.map(m => ({ ...m, status: 'synced' })));
+      }
+    } catch (err) {
+      console.warn('Sync failed:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   useEffect(() => {
+    // Load stored conversation history on startup
+    const loadStoredHistory = async () => {
+      try {
+        const ctx = await get_chat_context(DEFAULT_BOSS_PHONE, 60);
+        if (ctx.messages && ctx.messages.length > 0) {
+          setMessages(ctx.messages.map(m => ({
+            id: m.id,
+            text: m.text,
+            sender: (m.role === 'assistant' || m.role === 'natasha') ? 'natasha' : 'user',
+            timestamp: new Date(m.ts),
+            isBinary: m.role === 'assistant' || m.role === 'natasha',
+            status: m.status,
+            tags: m.tags
+          })));
+        }
+      } catch (err) {
+        console.warn('Could not load stored chat history:', err);
+      }
+    };
+    loadStoredHistory();
+
+    const handleSyncChange = (e: any) => {
+      if (e.detail) setSyncState(e.detail);
+    };
+
     const handleGlobalMessage = (e: any) => {
       const { text, isBinary } = e.detail;
-      setMessages(prev => [...prev, {
+      const newMsg: Message = {
         id: Date.now().toString(),
         text,
         sender: 'natasha',
         timestamp: new Date(),
-        isBinary
-      }]);
+        isBinary,
+        status: 'saved',
+        tags: ['broadcast']
+      };
+      setMessages(prev => [...prev, newMsg]);
+      save_chat_message({
+        id: newMsg.id,
+        role: 'natasha',
+        text,
+        ts: newMsg.timestamp.toISOString(),
+        tags: ['broadcast'],
+        app: 'natasha-chat'
+      });
     };
 
     const handleOpenChat = () => {
@@ -614,11 +683,13 @@ export const NatashaChat: React.FC = () => {
       setActiveTerminalSubject(sub);
     };
 
+    window.addEventListener('natasha-sync-state-changed', handleSyncChange);
     window.addEventListener('natasha-message', handleGlobalMessage);
     window.addEventListener('natasha-open-chat', handleOpenChat);
     window.addEventListener('natasha-run-terminal', handleGlobalRunTerminal);
 
     return () => {
+      window.removeEventListener('natasha-sync-state-changed', handleSyncChange);
       window.removeEventListener('natasha-message', handleGlobalMessage);
       window.removeEventListener('natasha-open-chat', handleOpenChat);
       window.removeEventListener('natasha-run-terminal', handleGlobalRunTerminal);
@@ -775,12 +846,15 @@ export const NatashaChat: React.FC = () => {
 
     if (!userMsgText && !currentAttachment) return;
 
+    const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const userMsg: Message = {
-      id: Date.now().toString(),
+      id: msgId,
       text: userMsgText || (currentAttachment ? `Attached File: ${currentAttachment.name}` : ''),
       sender: 'user',
       timestamp: new Date(),
-      attachment: currentAttachment || undefined
+      attachment: currentAttachment || undefined,
+      status: 'pending',
+      tags: ['chat', 'boss-input']
     };
 
     setMessages(prev => [...prev, userMsg]);
@@ -788,7 +862,24 @@ export const NatashaChat: React.FC = () => {
     setInputValue('');
     setSelectedFile(null);
 
+    // S4: Save-before-sent local queue + Firestore
+    save_chat_message({
+      id: msgId,
+      role: 'user',
+      text: userMsg.text,
+      ts: userMsg.timestamp.toISOString(),
+      tags: ['chat', 'boss-input'],
+      app: 'natasha-chat'
+    }).then(saved => {
+      setMessages(prev => prev.map(m => m.id === saved.id ? { ...m, status: saved.status } : m));
+    });
+
     const userQuery = userMsgText.toLowerCase().trim();
+
+    // Check if conversation seems to end -> offer Central Database storage prompt
+    if (/(bye|thank you|thanks|done|all done|finished|good night|store to central|archive chat)/i.test(userQuery)) {
+      setTimeout(() => setShowCentralDbStorePrompt(true), 800);
+    }
 
     setTimeout(() => {
       let selectedResponse = "";
@@ -826,16 +917,31 @@ export const NatashaChat: React.FC = () => {
         }
       }
 
+      const natashaMsgId = `msg_${Date.now() + 1}_${Math.random().toString(36).substring(2, 7)}`;
       const natashaMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: natashaMsgId,
         text: selectedResponse,
         sender: 'natasha',
         timestamp: new Date(),
-        isBinary: true
+        isBinary: true,
+        status: 'pending',
+        tags: ['chat', 'natasha-response']
       };
 
       setMessages(prev => [...prev, natashaMsg]);
       setIsTyping(false);
+
+      // S4: Save Natasha response to local offline queue and Firestore
+      save_chat_message({
+        id: natashaMsgId,
+        role: 'natasha',
+        text: selectedResponse,
+        ts: natashaMsg.timestamp.toISOString(),
+        tags: ['chat', 'natasha-response'],
+        app: 'natasha-chat'
+      }).then(saved => {
+        setMessages(prev => prev.map(m => m.id === saved.id ? { ...m, status: saved.status } : m));
+      });
 
       // Voice output in Natasha's female English voice
       try {
@@ -921,8 +1027,34 @@ export const NatashaChat: React.FC = () => {
                 </div>
               </div>
 
-              {/* Minimise, Maximise, Close Controls */}
+              {/* Central DB Sync & Window Controls */}
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={triggerCentralSync}
+                  disabled={isSyncing}
+                  className={`px-2.5 py-1 rounded-lg border text-[10px] font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    syncState.status === 'error'
+                      ? 'bg-red-500/20 border-red-500/50 text-red-300 hover:bg-red-500/30'
+                      : syncState.status === 'synced'
+                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
+                      : isSyncing || syncState.status === 'committing' || syncState.status === 'checking_privacy'
+                      ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 animate-pulse'
+                      : syncState.pendingCount > 0
+                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30'
+                      : 'bg-slate-900 border-cyan-500/30 text-cyan-300 hover:bg-cyan-900/40'
+                  }`}
+                  title={syncState.errorMessage || "Sync all chats to Central DB (GitHub iamraj-ux/N.-A.-T..-A.-S.-H.-A-v5.-6)"}
+                >
+                  <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isSyncing ? 'Syncing...' :
+                     syncState.status === 'synced' ? `Synced (${syncState.lastCommitSha || 'OK'})` :
+                     syncState.status === 'error' ? 'Retry Sync' :
+                     syncState.pendingCount > 0 ? `Sync DB (${syncState.pendingCount})` : 'Sync DB'}
+                  </span>
+                </button>
+
                 <button
                   onClick={() => setIsMinimized(true)}
                   className="p-1.5 rounded-lg bg-slate-900/80 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 transition-all cursor-pointer"
@@ -1096,11 +1228,56 @@ export const NatashaChat: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <span className="text-[8px] uppercase tracking-widest text-slate-500 mt-1 px-1 font-mono">
-                    {msg.sender === 'user' ? 'Mr. Raj (Boss)' : 'Natasha // AI Assistant'} // {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  <span className="text-[8px] uppercase tracking-widest text-slate-500 mt-1 px-1 font-mono flex items-center gap-2 flex-wrap">
+                    <span>{msg.sender === 'user' ? 'Mr. Raj (Boss)' : 'Natasha // AI Assistant'} // {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    {msg.status === 'pending' && (
+                      <span className="text-amber-400 font-bold flex items-center gap-0.5 lowercase">
+                        <Clock className="w-2.5 h-2.5" /> pending
+                      </span>
+                    )}
+                    {msg.status === 'saved' && (
+                      <span className="text-cyan-400 font-bold flex items-center gap-0.5 lowercase">
+                        <Check className="w-2.5 h-2.5" /> saved
+                      </span>
+                    )}
+                    {msg.status === 'synced' && (
+                      <span className="text-emerald-400 font-bold flex items-center gap-0.5 lowercase">
+                        <CheckCheck className="w-2.5 h-2.5" /> synced
+                      </span>
+                    )}
                   </span>
                 </div>
               ))}
+
+              {/* S4: Central Database Storage Prompt */}
+              {showCentralDbStorePrompt && (
+                <div className="p-3 bg-cyan-950/90 border border-cyan-500/50 rounded-2xl my-2 text-cyan-200 text-xs flex flex-col gap-2 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+                  <div className="font-semibold text-white flex items-center gap-2">
+                    <Cloud className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>Shall I store this on Raj Expo’s Central Database?</span>
+                  </div>
+                  <div className="flex gap-2 text-[10px]">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        triggerCentralSync();
+                        setShowCentralDbStorePrompt(false);
+                      }}
+                      className="px-3 py-1 bg-cyan-500 text-slate-950 font-bold rounded-lg hover:bg-cyan-400 transition cursor-pointer"
+                    >
+                      Store to Central Database
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setShowCentralDbStorePrompt(false)}
+                      className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition cursor-pointer"
+                    >
+                      Keep Local
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {isTyping && (
                 <div className="flex items-center gap-2 text-cyan-400/80 animate-pulse p-2 font-mono text-[10px]">
                   <Terminal className="w-3.5 h-3.5" />

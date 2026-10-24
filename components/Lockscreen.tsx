@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, Key, ShieldCheck, Cpu, Power, Clock, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Lock, Unlock, Key, ShieldCheck, Cpu, Power, Clock, Sparkles, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import { soundManager } from '../services/soundEffects';
+import { verifyPasscode, getRemainingLockoutSeconds, MAX_ATTEMPTS } from '../services/securityService';
 
 const rajExpoWallpaper = "/src/assets/images/raj_expo_logo_1780723511664.png";
 
@@ -18,6 +19,30 @@ export const Lockscreen: React.FC<LockscreenProps> = ({ isLocked, onUnlock, serv
   const [phrase, setPhrase] = useState('');
   const [pinInput, setPinInput] = useState('');
   const [isError, setIsError] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState<number>(() => getRemainingLockoutSeconds());
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutSeconds]);
+
+  // Sync lockout state whenever lockscreen is displayed
+  useEffect(() => {
+    if (isLocked) {
+      setLockoutSeconds(getRemainingLockoutSeconds());
+    }
+  }, [isLocked]);
 
   // Time & Greeting Calculator
   useEffect(() => {
@@ -59,19 +84,29 @@ export const Lockscreen: React.FC<LockscreenProps> = ({ isLocked, onUnlock, serv
     onUnlock();
   }, [onUnlock]);
 
-  const verifyAndUnlock = useCallback((input: string) => {
-    // Exact passcode verification: 199712
-    if (input === '199712') {
-      handlePerformUnlock();
-    } else {
-      soundManager.playWrongInputSound();
-      setIsError(true);
-      setTimeout(() => {
-        setIsError(false);
-        setPinInput('');
-      }, 700);
+  const verifyAndUnlock = useCallback(async (input: string) => {
+    if (lockoutSeconds > 0 || isVerifying || !input.trim()) return;
+
+    setIsVerifying(true);
+    try {
+      const result = await verifyPasscode(input.trim());
+      if (result.success) {
+        handlePerformUnlock();
+      } else {
+        soundManager.playWrongInputSound();
+        setIsError(true);
+        if (result.isLockedOut) {
+          setLockoutSeconds(result.remainingSeconds);
+        }
+        setTimeout(() => {
+          setIsError(false);
+          setPinInput('');
+        }, 700);
+      }
+    } finally {
+      setIsVerifying(false);
     }
-  }, [handlePerformUnlock]);
+  }, [handlePerformUnlock, lockoutSeconds, isVerifying]);
 
   useEffect(() => {
     if (!isLocked) return;
@@ -207,28 +242,38 @@ export const Lockscreen: React.FC<LockscreenProps> = ({ isLocked, onUnlock, serv
               transition={{ duration: 0.4 }}
               className="flex flex-col items-center gap-2"
             >
-              <div className="relative w-full">
-                <input
-                  type="password"
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  placeholder="••••••"
-                  autoFocus
-                  maxLength={12}
-                  className={`w-full text-center tracking-[0.5em] bg-slate-950/90 border-2 rounded-2xl py-3 px-4 text-cyan-200 text-lg font-mono focus:outline-none transition-all shadow-[0_0_25px_rgba(0,243,255,0.2)] ${
-                    isError 
-                      ? 'border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.6)] text-rose-300' 
-                      : 'border-cyan-400/80 focus:border-cyan-300'
-                  }`}
-                />
-              </div>
+              {lockoutSeconds > 0 ? (
+                <div className="w-full py-3 px-4 bg-rose-950/90 border-2 border-rose-500 rounded-2xl text-center text-rose-300 text-xs font-mono font-bold tracking-widest uppercase flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(244,63,94,0.4)]">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 animate-bounce" />
+                  <span>SECURITY LOCKOUT // {lockoutSeconds}S</span>
+                </div>
+              ) : (
+                <div className="relative w-full">
+                  <input
+                    type="password"
+                    value={pinInput}
+                    onChange={(e) => setPinInput(e.target.value)}
+                    placeholder="••••••"
+                    autoFocus
+                    maxLength={16}
+                    disabled={isVerifying}
+                    aria-label="System Passcode"
+                    className={`w-full text-center tracking-[0.5em] bg-slate-950/90 border-2 rounded-2xl py-3 px-4 text-cyan-200 text-lg font-mono focus:outline-none transition-all shadow-[0_0_25px_rgba(0,243,255,0.2)] ${
+                      isError 
+                        ? 'border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.6)] text-rose-300' 
+                        : 'border-cyan-400/80 focus:border-cyan-300'
+                    }`}
+                  />
+                </div>
+              )}
 
               <button
                 onClick={() => verifyAndUnlock(pinInput)}
-                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl cursor-pointer shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2"
+                disabled={lockoutSeconds > 0 || isVerifying || !pinInput}
+                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl cursor-pointer shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <Lock className="w-4 h-4" />
-                <span>AUTHENTICATE & UNLOCK</span>
+                <span>{isVerifying ? 'VERIFYING...' : 'AUTHENTICATE & UNLOCK'}</span>
               </button>
             </motion.div>
           </div>

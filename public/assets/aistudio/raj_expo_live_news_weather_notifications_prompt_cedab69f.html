@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAJ EXPO DIGITALS — Live Dashboard Features Prompt</title>
+<style>
+body{max-width:940px;margin:0 auto;padding:24px;font:16px/1.6 system-ui,sans-serif}
+h1{line-height:1.25}p{opacity:.82}
+textarea{box-sizing:border-box;width:100%;min-height:72vh;padding:16px;border:1px solid #8888;border-radius:10px;font:14px/1.55 ui-monospace,monospace}
+button{margin:12px 8px 0 0;padding:10px 15px;border:0;border-radius:8px;background:#16834a;color:white;font-weight:650;cursor:pointer}
+#status{min-height:1.5em}
+</style>
+</head>
+<body>
+<h1>Live Clock, News, Weather & Notifications — Implementation Prompt</h1>
+<p>Copy this prompt into your existing Google AI Studio Code Assistant. It requires real integrations and working interactions, not a visual-only mockup.</p>
+<textarea id="prompt" spellcheck="false">URGENT: IMPLEMENT THE MISSING HOME-SCREEN FEATURES IN MY EXISTING RAJ EXPO DIGITALS SERVER APP.
+
+Inspect the existing code and implement these features in the current project. Do not rebuild the app from scratch. A previous visual design reference looked good, but DO NOT make that new design the permanent default. Keep my current theme/layout as the default and add a Theme/Appearance setting so I can switch themes whenever I want.
+
+1. CLICKABLE CLOCK / DAILY OVERVIEW PANEL
+- Make the home-screen/taskbar clock clickable.
+- Clicking it must open a real working panel or popover showing:
+  • current date, time, and timezone;
+  • current weather for Colombo, Sri Lanka;
+  • latest news sections;
+  • pending reminders;
+  • unread/new notifications.
+- The panel must open, close, refresh, and respond to clicks. Do not leave decorative controls that do nothing.
+- Show loading, empty, error, and last-updated states clearly.
+
+2. LIVE NEWS — REAL SOURCES
+Provide separate news sections for:
+- World News
+- Sri Lanka News
+- AI / Google AI Studio / Gemini / major AI news
+
+Fetch current headlines from legitimate, accessible news sources or supported news/RSS/API integrations. Include headline, source, publication time/date, and a link to the original story. Refresh automatically at a reasonable interval and provide a manual Refresh button.
+- Never fabricate headlines, sources, dates, or links.
+- If a feed/API is unavailable, show a clear error/unavailable state instead of sample news.
+- Respect source terms, rate limits, CORS constraints, and API credentials. If a secure backend/proxy is required, implement it using the project's existing supported backend architecture.
+- Do not expose private API keys in frontend code.
+- Do not claim that news is live unless it has actually been fetched successfully.
+
+3. COLOMBO, SRI LANKA WEATHER
+- Show current conditions and a forecast for Colombo, Sri Lanka.
+- Include temperature, condition, rain chance when provided, and forecast dates/times.
+- Use a real weather API/provider with valid access and clearly identify the source and last update time.
+- Refresh on a reasonable schedule and include a manual Refresh option.
+- Do not use hard-coded or invented weather. If no working provider/configuration is available, show “Weather data unavailable” and explain what setup is required.
+- Keep the location configurable later, but use Colombo, Sri Lanka as the initial location.
+
+4. REMINDERS AND NOTIFICATIONS
+- Connect to the app's existing reminder, task, and notification data/services if present.
+- Show pending/upcoming reminders with due date/time and unread/new notifications with a count.
+- Let me open an item to view its details and navigate to the related feature when supported.
+- Provide working actions such as mark notification as read, dismiss where appropriate, and open reminder details.
+- If reminders or notifications do not yet exist, implement a real minimal local/app-backed reminder and notification system with add, edit, complete, and delete controls as appropriate. Do not create fake pending items to make the panel look populated.
+- Persist data using the existing application architecture. Do not silently upload private data to external services.
+- Request notification permissions only when needed, explain why, and handle denied permissions gracefully. Do not promise background notifications if the browser/platform cannot support them.
+
+5. THEME / APPEARANCE SETTINGS
+- Preserve the current app appearance as the default.
+- Add a Theme/Appearance settings option so I can change the theme at any time.
+- The new blue/glass-style design is an optional theme/reference, not a forced default.
+- Theme changes should apply consistently to the dashboard, clock panel, news, weather, reminders, notifications, and touchpad if present.
+- Persist the user's chosen theme through the existing settings mechanism.
+
+6. IMPLEMENTATION AND SECURITY
+- First inspect the existing code and report which features already exist and why their current controls do not work.
+- Wire every visible button, icon, menu item, and refresh action to real behavior.
+- Reuse existing Firebase, GitHub, Cloudinary, authentication, database, and backend configuration without resetting or replacing them. Use only what is appropriate for each feature.
+- Use real, supported APIs/feed sources. Handle errors, timeouts, missing credentials, rate limits, and offline conditions.
+- Avoid excessive polling. Cache data where appropriate and display when it was last updated.
+- Do not introduce fake integrations, mock news, fabricated weather, placeholder notifications, or false success messages.
+- Preserve all unrelated working features and existing data. Make incremental changes; ask for approval before destructive operations.
+
+7. TEST AND REPORT
+Test clock click/open/close, live refresh, each news section and original-story links, Colombo weather retrieval, reminder and notification actions, theme switching, and persistence.
+If a feature cannot work until I provide an API key, enable a provider, or grant permission, clearly identify the exact requirement and leave an honest setup state. Do not claim the feature is implemented or tested unless verified.
+
+Continue the existing implementation and fix the currently non-working features. Do not merely provide a plan or create a static UI mockup.</textarea>
+<button id="copy" type="button">Copy Full Prompt</button>
+<button id="select" type="button">Select Prompt</button>
+<p id="status" role="status" aria-live="polite"></p>
+<script>
+const box=document.getElementById('prompt');
+const status=document.getElementById('status');
+document.getElementById('copy').addEventListener('click',async()=>{
+ try{await navigator.clipboard.writeText(box.value);status.textContent='Prompt copied.'}
+ catch(e){box.focus();box.select();status.textContent=document.execCommand('copy')?'Prompt copied.':'Prompt selected. Copy it manually.'}
+});
+document.getElementById('select').addEventListener('click',()=>{box.focus();box.select();status.textContent='Prompt selected.'});
+</script>
+</body>
+</html>

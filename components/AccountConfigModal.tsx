@@ -24,6 +24,7 @@ import {
 } from '../services/accountConfigService';
 import { soundManager } from '../services/soundEffects';
 import { logActivity } from '../services/activityLogger';
+import { changePasscode } from '../services/securityService';
 
 interface AccountConfigModalProps {
   isOpen: boolean;
@@ -69,6 +70,50 @@ export const AccountConfigModal: React.FC<AccountConfigModalProps> = ({
 
   // Status feedback
   const [feedback, setFeedback] = useState<string>('');
+
+  // Passcode Change State (S3 Security)
+  const [currentPinInput, setCurrentPinInput] = useState<string>('');
+  const [newPinInput, setNewPinInput] = useState<string>('');
+  const [confirmPinInput, setConfirmPinInput] = useState<string>('');
+  const [passcodeMessage, setPasscodeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isUpdatingPasscode, setIsUpdatingPasscode] = useState<boolean>(false);
+
+  const handleChangePasscode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPinInput.trim() || !newPinInput.trim()) {
+      setPasscodeMessage({ type: 'error', text: 'Please enter both current and new passcode.' });
+      return;
+    }
+    if (newPinInput !== confirmPinInput) {
+      setPasscodeMessage({ type: 'error', text: 'New passcodes do not match.' });
+      return;
+    }
+    if (newPinInput.trim().length < 4) {
+      setPasscodeMessage({ type: 'error', text: 'New passcode must be at least 4 digits.' });
+      return;
+    }
+
+    setIsUpdatingPasscode(true);
+    setPasscodeMessage(null);
+    try {
+      const res = await changePasscode(currentPinInput.trim(), newPinInput.trim());
+      if (res.success) {
+        soundManager.playAccessGrantedSound();
+        setPasscodeMessage({ type: 'success', text: 'Passcode updated successfully with salted SHA-256 hash.' });
+        setCurrentPinInput('');
+        setNewPinInput('');
+        setConfirmPinInput('');
+        logActivity('SERVER_TASK', 'Passcode Updated', 'Operator changed system passcode (salted SHA-256)');
+      } else {
+        soundManager.playWrongInputSound();
+        setPasscodeMessage({ type: 'error', text: res.error || 'Failed to update passcode.' });
+      }
+    } catch (err: any) {
+      setPasscodeMessage({ type: 'error', text: err?.message || 'Error updating passcode.' });
+    } finally {
+      setIsUpdatingPasscode(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -456,6 +501,80 @@ export const AccountConfigModal: React.FC<AccountConfigModalProps> = ({
                 >
                   {isSignUpMode ? <UserPlus className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
                   {isSignUpMode ? 'Register Operator Account' : 'Authenticate Session'}
+                </button>
+              </form>
+
+              {/* S3 SECURITY: CHANGE PASSCODE WITH SALTED SHA-256 HASH */}
+              <form onSubmit={handleChangePasscode} className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <Key className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-xs font-black text-cyan-300 uppercase">
+                    Security Passcode (Salted SHA-256)
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-400">
+                  Update lockscreen PIN. Passcode is salted and cryptographically hashed before local persistence.
+                </p>
+
+                {passcodeMessage && (
+                  <div className={`p-2.5 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                    passcodeMessage.type === 'success' 
+                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300' 
+                      : 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
+                  }`}>
+                    {passcodeMessage.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    <span>{passcodeMessage.text}</span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">
+                    Current Passcode
+                  </label>
+                  <input
+                    type="password"
+                    value={currentPinInput}
+                    onChange={(e) => setCurrentPinInput(e.target.value)}
+                    placeholder="••••••"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 font-mono tracking-widest"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">
+                      New Passcode (min 4)
+                    </label>
+                    <input
+                      type="password"
+                      value={newPinInput}
+                      onChange={(e) => setNewPinInput(e.target.value)}
+                      placeholder="••••••"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 font-mono tracking-widest"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">
+                      Confirm New Passcode
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPinInput}
+                      onChange={(e) => setConfirmPinInput(e.target.value)}
+                      placeholder="••••••"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-400 font-mono tracking-widest"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUpdatingPasscode}
+                  className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>{isUpdatingPasscode ? 'Updating & Hashing...' : 'Update & Re-Hash Passcode'}</span>
                 </button>
               </form>
             </div>

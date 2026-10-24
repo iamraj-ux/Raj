@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAJ EXPO DIGITALS — Quota & Token Monitor Implementation Prompt</title>
+  <style>
+    :root { color-scheme: light dark; --accent: #16834a; }
+    body {
+      margin: 0; padding: 24px; font: 16px/1.6 system-ui, -apple-system, Segoe UI, sans-serif;
+      max-width: 980px; margin-inline: auto;
+    }
+    header { margin-bottom: 20px; }
+    h1 { line-height: 1.2; }
+    .note { opacity: .8; }
+    textarea {
+      display: block; width: 100%; min-height: 68vh; box-sizing: border-box;
+      padding: 18px; border-radius: 12px; border: 1px solid #8888;
+      font: 14px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+      resize: vertical; white-space: pre-wrap;
+    }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+    button {
+      border: 0; border-radius: 9px; padding: 11px 16px; cursor: pointer;
+      background: var(--accent); color: white; font-weight: 650;
+    }
+    button.secondary { background: #777; }
+    #status { min-height: 1.5em; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Quota & Token Monitor — Implementation Prompt</h1>
+    <p class="note">Copy the prompt below into your existing Google AI Studio Code Assistant. This asks it to continue the existing project, not rebuild it.</p>
+  </header>
+
+  <div class="actions">
+    <button id="copyBtn" type="button">Copy Full Prompt</button>
+    <button id="selectBtn" class="secondary" type="button">Select Prompt</button>
+  </div>
+
+  <textarea id="prompt" spellcheck="false" aria-label="Implementation prompt">IMPLEMENTATION PROMPT — REAL QUOTA MONITOR + PROMPT TOKEN COUNTER
+
+Continue the existing implementation and include this feature in the same ongoing task when I enter `K`. Inspect the existing project first. Do not rebuild it from scratch, discard completed work, or break existing features.
+
+PROJECT PRESERVATION
+- Work inside my existing RAJ EXPO DIGITALS SERVER / Google AI Studio app.
+- Preserve the existing UI, branding, layout, theme, animations, navigation, data, user records, and working features.
+- Preserve the existing Firebase, GitHub, Cloudinary, authentication, database, and activity-logging integrations. Do not reset or replace configuration, keys, records, or integrations.
+- Make incremental, reversible changes. Ask for approval before destructive operations.
+- Implement real functionality, not a mockup, fake integration, fabricated data, or simulated live status.
+
+1. CREATE A DEDICATED PROMPT TOKEN COUNTER
+Create a separate module/app inside the existing application named “Prompt Token Counter”.
+
+- Provide a large text area where I can type or paste the exact prompt or code I plan to give to the AI Studio Code Assistant.
+- Recalculate character count, word count, and token count as the text changes.
+- Use a compatible tokenizer for the selected model when available.
+- If the exact tokenizer is unavailable, display a clearly labelled token estimate and explain its limitations. Never present an estimate as an exact count.
+- Allow a configurable token budget and show what percentage of that budget the prompt would use.
+- Warn when the prompt exceeds the configured budget.
+- Provide “Copy Prompt”, “Copy Token Report”, and “Clear Input” controls.
+- I will manually paste the copied prompt into the Code Assistant. Do not automatically submit prompts, run pasted code, or trigger AI code changes.
+- Handle large inputs without freezing the interface.
+
+2. INVESTIGATE ACTUAL AI STUDIO CODE ASSISTANT QUOTA
+Inspect the current project and available official provider interfaces to determine whether the specific AI Studio Code Assistant exposes:
+- Actual tokens used per generation/task.
+- Actual remaining quota or usage limits.
+- The relevant quota window and reset time.
+- Any supported way to retrieve this data securely.
+
+Use only a real, authorized, supported source. Do not assume the Gemini API quota is the same as the AI Studio Code Assistant quota. Do not infer internal Code Assistant usage from prompt length or from the fact that generation finished.
+
+If actual usage is accessible:
+- Retrieve it through the supported interface.
+- Record the returned values with their source and timestamp.
+- Distinguish actual input tokens, output tokens, other usage metrics, and remaining quota.
+- Calculate remaining quota only when the official limit and usage belong to the same applicable quota window.
+- Update the monitor after a task only if a real integration or verified source allows it.
+
+If actual usage or remaining quota is not accessible:
+- Clearly show “Actual usage unavailable” or “Actual remaining quota unavailable”.
+- Explain which provider data is inaccessible.
+- Do not fabricate values, pretend to connect to an unsupported endpoint, or claim automatic tracking works when it does not.
+- Offer manual entry only as explicitly user-entered data, clearly labelled as such; never represent it as provider-verified data.
+
+3. PERSISTENT HOME-SCREEN INDICATOR
+Add a compact indicator at the top of the existing home screen without obstructing current controls.
+
+Show only information supported by evidence:
+- Verified remaining quota and percentage, when available.
+- Actual usage, when available.
+- Last successful update time.
+- Reset countdown only when a reliable reset time is provided.
+- Clear status labels: Verified, Estimate, Stale, Manually entered, or Unavailable.
+
+Never default an unknown quota to 100%. Never show a battery-style decreasing percentage unless the calculation is based on valid, current data. If no verified data is available, display “Quota status unknown” rather than a fake percentage.
+
+4. HONEST WARNINGS AND ALERTS
+Where verified quota data exists, support configurable warning thresholds such as 50%, 25%, 10%, 5%, and 0% remaining.
+
+- Show an in-app notification at the configured thresholds.
+- For critical verified warnings, the indicator may blink until acknowledged.
+- Stop blinking when acknowledged.
+- Avoid repeated duplicate popups unless the status changes.
+- Do not trigger “quota exhausted” alerts from estimates or stale data.
+- If only an estimated prompt budget is available, keep its warnings visually separate from actual provider quota warnings.
+
+5. USAGE HISTORY AND PRIVACY
+Where feasible, track prompts checked, estimated token counts, timestamps, and the selected model. Make prompt-text history optional. Reuse the existing storage architecture where appropriate.
+
+- Do not silently upload private prompt text to GitHub, Cloudinary, or other external services.
+- Do not log API keys, access tokens, or secrets.
+- Distinguish tokens estimated by this tool from tokens actually consumed by the Code Assistant.
+- Use the existing activity logger for relevant actions without unnecessarily storing private content.
+
+6. SECURITY AND QUALITY
+- Keep credentials out of frontend code and logs.
+- Do not add unsupported API endpoints or scrape private interfaces.
+- Reuse existing project components and authentication.
+- Add loading, error, empty, stale-data, and unavailable-data states.
+- Ensure mobile and desktop responsiveness.
+- Avoid excessive polling and unnecessary API requests.
+- Do not overwrite environment variables, OAuth configuration, database records, or existing integrations.
+
+7. TEST AND REPORT
+After implementation:
+- Verify that existing features still work.
+- Test typing, pasting, editing, copying, and clearing prompt text.
+- Test token estimates and budget warnings.
+- Test alert thresholds with test fixtures without presenting test values as real quota data.
+- Verify actual quota integration only if a supported source exists.
+- Report what was implemented and tested, what is estimated, what is provider-verified, and what cannot be accessed.
+
+Do not claim a test passed unless it was actually performed.
+
+CONTINUATION RULE
+When I enter `K`, continue the ongoing implementation and include this complete feature in the same continuation workflow. Preserve previous progress and completed work. Do not restart the project. Do not stop after giving a plan; implement and verify what is possible, and clearly report any provider-access limitation.</textarea>
+
+  <div class="actions">
+    <button id="copyBtnBottom" type="button">Copy Full Prompt</button>
+  </div>
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <script>
+    const promptBox = document.getElementById('prompt');
+    const status = document.getElementById('status');
+
+    async function copyPrompt() {
+      try {
+        await navigator.clipboard.writeText(promptBox.value);
+        status.textContent = 'Prompt copied to clipboard.';
+      } catch (error) {
+        promptBox.focus();
+        promptBox.select();
+        const ok = document.execCommand('copy');
+        status.textContent = ok
+          ? 'Prompt copied to clipboard.'
+          : 'Automatic copy was blocked. The prompt is selected; copy it manually.';
+      }
+    }
+
+    document.getElementById('copyBtn').addEventListener('click', copyPrompt);
+    document.getElementById('copyBtnBottom').addEventListener('click', copyPrompt);
+    document.getElementById('selectBtn').addEventListener('click', () => {
+      promptBox.focus();
+      promptBox.select();
+      status.textContent = 'Prompt selected. Use Copy to copy it.';
+    });
+  </script>
+</body>
+</html>

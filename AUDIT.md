@@ -1,0 +1,15 @@
+# AUDIT: Raj Expo Digitals Server App
+- Framework: React 18 SPA + Vite 6 + Express 5 (server.ts backend proxy)
+- Dependencies: @google/genai 2.30, express 5.3, firebase 12.13, framer-motion 12.38, jszip 3.10, lucide-react 1.14, tsx 4.23, typescript 5.8, tailwindcss
+- Firebase: firebase-applet-config.json (Project: gen-lang-client-0161993094, Auth, Firestore rules, Storage bucket)
+- DB Categories: Central Record Service (20 canonical types, entity relationship graph, SHA-256 integrity, local + cloud state)
+- Chat: Natasha ASI 5.6 conversational engine (multi-dialect American urban/Tamil/Sinhala, soundManager, anti-repetition memory)
+- People & Contacts: People Database Modal + contactDirectoryService (867 RFC 4180 contacts, 12-param queries, 6 export formats, merge)
+- WhatsApp: Direct chat viewer modal, wa.me E.164 link generator, SL prefix normalization (+94, 07X), message drafting
+- Files & Cloudinary: Cloudinary File Manager Modal (folders/subfolders, native tags, format selector, AI description & tags, prompt builder)
+- Tasks & System Log: All System Activities Modal, real-time activityLogger, sound effects manager
+- GitHub Sync: Dual-sync engine to iamraj-ux/N.-A.-T..-A.-S.-H.-A-v5.-6 (catalog, text DB, tag metadata)
+- Lockscreen: PIN screenlock, autolock timer, Taskbar & Start menu lock buttons, cosmic wallpaper canvas & settings
+- Model Routing: Prompt Studio, Prompt Customization Modal, Gemini 2.5 Flash server-side proxy with strict output rules & fallbacks
+- PDF Counter & Tool Hub: PDF Counter Modal (JSZip/PDF page counter, duplex/simplex cost calculator), Digital Tool Hub (20+ tools, QR generator)
+- Existing Status: All existing working features, user data, and branding preserved.

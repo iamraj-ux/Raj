@@ -42,7 +42,11 @@ export const AllSystemActivitiesModal: React.FC<AllSystemActivitiesModalProps> =
       loadActivities();
     }
 
-    const handleUpdate = () => loadActivities();
+    const handleUpdate = () => {
+      setTimeout(() => {
+        loadActivities();
+      }, 0);
+    };
     window.addEventListener('system-activity-logged', handleUpdate);
     return () => window.removeEventListener('system-activity-logged', handleUpdate);
   }, [isOpen, inlineView]);
