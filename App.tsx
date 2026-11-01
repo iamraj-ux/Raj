@@ -45,6 +45,7 @@ import { PromptCustomisationModal } from './components/PromptCustomisationModal'
 import { AccountConfigModal } from './components/AccountConfigModal';
 import { TaskbarDock, type AppId } from './components/TaskbarDock';
 import { CosmicWallpaperCanvas } from './components/CosmicWallpaperCanvas';
+import { DesktopWorkspace } from './components/DesktopWorkspace';
 import { WallpaperSettingsModal } from './components/WallpaperSettingsModal';
 import { 
   getSyncedDefaultSettings, 
@@ -971,6 +972,50 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleClearAll, isRenameModalOpen, files.length]);
 
+  // Triple-click handler to close first appeared / foremost open window per user request
+  const handleCloseForemostWindow = useCallback(() => {
+    if (isActivitiesModalOpen) { setIsActivitiesModalOpen(false); return true; }
+    if (isServerHubOpen) { setIsServerHubOpen(false); return true; }
+    if (isPromptStudioOpen) { setIsPromptStudioOpen(false); return true; }
+    if (isWallpaperSettingsOpen) { setIsWallpaperSettingsOpen(false); return true; }
+    if (isPdfCounterModalOpen) { setIsPdfCounterModalOpen(false); return true; }
+    if (isPeopleDbModalOpen) { setIsPeopleDbModalOpen(false); return true; }
+    if (isGitHubModalOpen) { setIsGitHubModalOpen(false); return true; }
+    if (isToolHubModalOpen) { setIsToolHubModalOpen(false); return true; }
+    if (isWhatsAppViewerOpen) { setIsWhatsAppViewerOpen(false); return true; }
+    if (isCloudinaryDatabaseOpen) { setIsCloudinaryDatabaseOpen(false); return true; }
+    if (isGooglePickerOpen) { setIsGooglePickerOpen(false); return true; }
+    if (isGoogleDriveModalOpen) { setIsGoogleDriveModalOpen(false); return true; }
+    if (isAccountConfigOpen) { setIsAccountConfigOpen(false); return true; }
+    if (isTokenCounterOpen) { setIsTokenCounterOpen(false); return true; }
+    if (isClockOverviewOpen) { setIsClockOverviewOpen(false); return true; }
+    if (isButtonIntelModalOpen) { setIsButtonIntelModalOpen(false); return true; }
+    if (isMediaUploadOpen) { setIsMediaUploadOpen(false); return true; }
+    if (isRajExpoMediaOpen) { setIsRajExpoMediaOpen(false); return true; }
+    if (isRenameModalOpen) { setIsRenameModalOpen(false); return true; }
+    return false;
+  }, [
+    isActivitiesModalOpen, isServerHubOpen, isPromptStudioOpen, isWallpaperSettingsOpen,
+    isPdfCounterModalOpen, isPeopleDbModalOpen, isGitHubModalOpen, isToolHubModalOpen,
+    isWhatsAppViewerOpen, isCloudinaryDatabaseOpen, isGooglePickerOpen, isGoogleDriveModalOpen,
+    isAccountConfigOpen, isTokenCounterOpen, isClockOverviewOpen, isButtonIntelModalOpen,
+    isMediaUploadOpen, isRajExpoMediaOpen, isRenameModalOpen
+  ]);
+
+  useEffect(() => {
+    const handleTripleClick = (e: MouseEvent) => {
+      if (e.detail === 3) {
+        const closed = handleCloseForemostWindow();
+        if (closed) {
+          soundManager.playLockSound();
+          logActivity('WINDOW_CONTROL', 'Triple-Click Window Close', 'Closed foremost window via triple-click gesture.');
+        }
+      }
+    };
+    window.addEventListener('click', handleTripleClick);
+    return () => window.removeEventListener('click', handleTripleClick);
+  }, [handleCloseForemostWindow]);
+
   // Google Workspace auth listeners
   useEffect(() => {
     const unsubscribe = initAuth(
@@ -1215,7 +1260,7 @@ function App() {
   return (
     <div 
       onClick={cycleAnimStyle}
-      className={`min-h-screen font-sans p-4 sm:p-6 lg:p-8 pb-28 sm:pb-32 selection:bg-cyan-500/30 anim-style-${animStyleIndex} theme-${activeDisplaySettings.themeId || customTheme} relative overflow-x-hidden`}
+      className={`min-h-screen font-sans selection:bg-cyan-500/30 anim-style-${animStyleIndex} theme-${activeDisplaySettings.themeId || customTheme} relative overflow-hidden flex flex-col`}
     >
       {/* 15 Dynamic Animated Cosmic Wallpapers / Cloudinary Device Upload Engine */}
       <CosmicWallpaperCanvas
@@ -1340,117 +1385,18 @@ function App() {
         </div>
       </div>
 
+      {/* Primary Desktop OS Workspace matching User's Provided UI Screenshot */}
+      <DesktopWorkspace
+        onOpenApp={(appId) => handleToggleApp(appId as AppId)}
+        onLockScreen={() => setIsLocked(true)}
+        serverOnlineStatus={serverOnlineStatus}
+        onOpenClockOverview={() => setIsClockOverviewOpen(true)}
+        onOpenNatashaChat={() => {
+          window.dispatchEvent(new CustomEvent('natasha-open-chat'));
+        }}
+      />
+
       <div className="max-w-6xl mx-auto relative z-10">
-        <motion.header 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-16 pt-4 sm:pt-0 relative"
-        >
-          {/* PERSISTENT HOME-SCREEN TOP BARS: COLOMBO OVERVIEW & QUOTA MONITOR */}
-          <div className="flex flex-wrap justify-center gap-3 mb-4">
-            <button
-              onClick={() => {
-                soundManager.playClickSound();
-                setIsClockOverviewOpen(true);
-              }}
-              className="px-4 py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 border border-emerald-500/40 hover:border-emerald-400 text-xs font-mono transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(16,185,129,0.15)] group active:scale-95"
-              title="Click to open Daily Overview: Colombo Weather, Live News & Reminders"
-            >
-              <Clock className="w-3.5 h-3.5 text-emerald-400 group-hover:animate-spin-slow" />
-              <span className="text-[10px] text-slate-400 uppercase font-bold">Colombo 🇱🇰:</span>
-              <span className="text-[10px] font-bold text-emerald-300">Live Overview</span>
-              <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Weather & News
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                soundManager.playClickSound();
-                setIsTokenCounterOpen(true);
-              }}
-              className="px-4 py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 border border-cyan-500/40 hover:border-cyan-400 text-xs font-mono transition-all flex items-center gap-2.5 cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.15)] group active:scale-95"
-              title="Click to open Prompt Token Counter & Quota Monitor"
-            >
-              <Cpu className="w-3.5 h-3.5 text-cyan-400 group-hover:animate-pulse" />
-              <span className="text-[10px] text-slate-400 uppercase font-bold">Assistant Quota:</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                {inspectCodeAssistantQuota().statusLabel}
-              </span>
-              <span className="text-[10px] text-cyan-300 hidden sm:inline underline font-bold">
-                Token Counter
-              </span>
-            </button>
-          </div>
-          <div className="absolute -top-12 -right-8 xl:-right-48 2xl:-right-64 hidden lg:block group z-50">
-            <motion.div 
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`px-6 py-4 rounded-[1.5rem] backdrop-blur-3xl shadow-2xl transition-all border-r-4 text-right scale-90 origin-top-right ${
-                serverOnlineStatus 
-                  ? 'bg-emerald-500/15 border border-emerald-500/40 border-r-emerald-400 shadow-[0_0_60px_rgba(16,185,129,0.2)]'
-                  : 'bg-amber-500/15 border border-amber-500/40 border-r-amber-400 shadow-[0_0_60px_rgba(245,158,11,0.2)]'
-              }`}
-            >
-              <div className="flex flex-col gap-2.5 items-end">
-                <p className={`text-[13px] font-black uppercase tracking-[0.6em] flex items-center gap-3 ${serverOnlineStatus ? 'text-emerald-300' : 'text-amber-300'}`}>
-                  Raj Expo Server Uplink
-                  <span className={`w-2.5 h-2.5 rounded-full animate-jarvis-blink ${serverOnlineStatus ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,1)]' : 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,1)]'}`} />
-                </p>
-                <div className="flex items-center gap-5 mr-1">
-                  <p className={`text-[11px] font-black uppercase tracking-[0.3em] flex items-center gap-2 ${serverOnlineStatus ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    <span className="opacity-60 font-medium">Server Status:</span> {serverOnlineStatus ? 'ONLINE AND READY' : 'STANDBY OR OFFLINE'}
-                  </p>
-                  <div className="w-[1px] h-3.5 bg-cyan-500/30" />
-                  <p className="text-[11px] font-black text-cyan-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                    <span className="opacity-60 font-medium">Latency:</span> {serverOnlineStatus ? '8ms' : 'Offline'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 mr-1">
-                  <p className="text-[9px] font-black text-cyan-400/50 uppercase tracking-[0.5em]">
-                    N.A.T.A.S.H.A 5.6 ASI 916 (ENCRYPTED) // Click anywhere to shift animation
-                  </p>
-                  <div className="flex gap-1.5 items-center justify-center">
-                     {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="w-1.5 h-3.5 bg-cyan-500/20 rounded-full overflow-hidden"><div className="w-full h-full bg-cyan-400 animate-pulse" style={{ animationDelay: `${i * 0.12}s` }}></div></div>)}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-          <div className="flex flex-col items-center justify-center gap-6 mb-4">
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.05, 1],
-                borderColor: ['rgba(34, 211, 238, 0.3)', 'rgba(34, 211, 238, 0.8)', 'rgba(34, 211, 238, 0.3)']
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="bg-cyan-600/10 p-8 rounded-full border-2 border-cyan-500/30 backdrop-blur-md relative group/logo cursor-pointer"
-            >
-              <div className="absolute inset-0 rounded-full animate-ping bg-cyan-500/10" />
-              <img
-                src={rajExpoLogo}
-                alt="Raj Expo"
-                className="w-40 h-40 md:w-48 md:h-48 object-contain rounded-full drop-shadow-[0_0_25px_rgba(34,211,238,0.6)] transition-transform group-hover/logo:scale-110 relative z-10"
-                referrerPolicy="no-referrer"
-              />
-            </motion.div>
-            <div className="space-y-4 group">
-              <motion.h1 
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tighter drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] uppercase"
-              >
-                {customTitle.includes('Raj Expo') ? (
-                  <>Welcome to <span className="text-cyan-500">Raj Expo Digitals</span></>
-                ) : (
-                  <span className="text-cyan-400">{customTitle}</span>
-                )}
-              </motion.h1>
-
-            </div>
-          </div>
-        </motion.header>
-
         <main className="space-y-4">
           {/* Unsaved Changes Tracker & Event Toast Notification */}
           <SaveReminderBar onSave={() => handleOneTapGitHubSync()} />
@@ -1756,29 +1702,6 @@ function App() {
             </div>
           </motion.div>
         )}
-
-        <footer className="mt-20 border-t border-white/5 pt-10 pb-16 text-center">
-          <div className="flex flex-col items-center gap-4">
-            <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500 opacity-40 animate-pulse">Encryption: AES-256 Enabled // Authorized Personnel Only: RAJ & NATASHA 5.6 ASI 916</p>
-            <p className="text-[9px] font-black text-cyan-500/30 uppercase tracking-[0.6em]">System Architecture by N.A.T.A.S.H.A 5.6 & Raj // Raj Expo Digitals Server 916 (Encrypted)</p>
-          </div>
-        </footer>
-
-        {/* RESPONSIVE PINNED TASKBAR DOCK & SYSTEM TRAY */}
-        <TaskbarDock
-          openAppIds={openAppIds}
-          minimizedAppIds={minimizedAppIds}
-          onToggleApp={handleToggleApp}
-          currentTheme={customTheme}
-          onSelectTheme={handleSelectTheme}
-          isLocked={isLocked}
-          onToggleLock={() => isLocked ? handleUnlock() : handleLockApp()}
-          syncPhase={syncPhase}
-          onOneTapSync={handleOneTapGitHubSync}
-          onOpenNewTab={handleOpenInNewTab}
-          onPurgeData={() => setIsPurgeConfirmOpen(true)}
-          onOpenClockOverview={() => setIsClockOverviewOpen(true)}
-        />
 
         {/* WALLPAPER & SETTINGS STUDIO MODAL */}
         <WallpaperSettingsModal

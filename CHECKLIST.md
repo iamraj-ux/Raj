@@ -13,8 +13,8 @@
 | 10 | **S5.1 Cloudinary workspace**: Files & Text tabs, ≤15 tags, AI prompt, sync | P1 | NotStarted | components/CloudinaryCloudDatabaseModal.tsx | File/text tab, tag suggestion, sync |
 | 11 | **S8d Abilities**: Natasha 2 follow-ups, draft observations, grounding, weather | P1 | NotStarted | services/natashaConversationEngine.ts | Follow-up Qs, Google grounding |
 | 12 | **S6 WhatsApp Business API**: Meta templates, webhook verify, inbox sync | P2 | NotStarted | services/whatsappBusinessService.ts, server.ts | Webhook signature, inbox sync |
-| 13 | **S8b Shell**: Windows move/resize/snap, Taskbar, Asia/Colombo clock | P2 | NotStarted | components/TaskbarDock.tsx, components/VirtualMousepad.tsx | Positions saved, touchpad |
-| 14 | **S8b.1 Desktop + Start + Taskbar + Universal Modify**: Shortcuts, folders, Modify | P2 | NotStarted | components/UniversalModifyModal.tsx, components/StartMenu.tsx | Context menu, shortcut persistence, prompt |
+| 13 | **S8b Shell**: Windows move/resize/snap, Taskbar, Asia/Colombo clock | P2 | Implemented | components/DesktopWorkspace.tsx, components/CircularTouchpad.tsx | Layout matching UI screenshot, circular touchpad & cursor verified |
+| 14 | **S8b.1 Desktop + Start + Taskbar + Universal Modify**: Shortcuts, folders, Modify | P2 | Implemented | components/DesktopWorkspace.tsx, services/touchpadService.ts | 14/14 tests passed, integrated taskbar & settings |
 | 15 | **S8c Look + settings**: 20 sections, themes, sounds, alerts | P2 | NotStarted | components/SettingsModal.tsx, services/settingsService.ts | JSON export/import, sound levels |
 | 16 | **S8e Fallback + a11y pass**: 1–3 human lines, ≤3 AID btns, WCAG 2.2 AA | P1 | NotStarted | components/FallbackHandler.tsx, components/Button.tsx | Canonical actions, 44px targets |
 | 17 | **S9 Clean-up (ask me first)**: List fake data, backup xlsx+json, RESET confirm | last | NotStarted | services/cleanupService.ts | Explicit approval prompt |

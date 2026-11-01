@@ -88,7 +88,11 @@ export const CosmicWallpaperCanvas: React.FC<CosmicWallpaperCanvasProps> = ({
         width / 2, height / 2, Math.max(width, height) * 0.75
       );
 
-      if (wallpaper.id === 'deep-space-nebula') {
+      if (wallpaper.id === 'raj-expo-digitals-live') {
+        baseGrad.addColorStop(0, '#031b2c');
+        baseGrad.addColorStop(0.5, '#05101d');
+        baseGrad.addColorStop(1, '#010408');
+      } else if (wallpaper.id === 'deep-space-nebula') {
         baseGrad.addColorStop(0, '#1e1035');
         baseGrad.addColorStop(0.5, '#0d0722');
         baseGrad.addColorStop(1, '#02020a');
@@ -118,7 +122,38 @@ export const CosmicWallpaperCanvas: React.FC<CosmicWallpaperCanvasProps> = ({
       ctx.fillRect(0, 0, width, height);
 
       // 2. Specific Cosmic Atmosphere Effects
-      if (wallpaper.id === 'aurora-borealis') {
+      if (wallpaper.id === 'raj-expo-digitals-live') {
+        // Holographic Cyber Energy Core & Concentric Rings
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        const cx = width / 2;
+        const cy = height / 2;
+        const pulse = 1 + 0.05 * Math.sin(time * 2);
+
+        // Ambient center glow
+        const coreGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, Math.min(width, height) * 0.45 * pulse);
+        coreGrad.addColorStop(0, 'rgba(6, 182, 212, 0.28)');
+        coreGrad.addColorStop(0.35, 'rgba(59, 130, 246, 0.16)');
+        coreGrad.addColorStop(0.7, 'rgba(14, 165, 233, 0.05)');
+        coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = coreGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.min(width, height) * 0.45 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3 Concentric rotating energy rings
+        for (let ring = 0; ring < 3; ring++) {
+          const ringRadius = (120 + ring * 90) * pulse;
+          ctx.beginPath();
+          ctx.strokeStyle = ring === 0 ? 'rgba(34, 211, 238, 0.35)' : ring === 1 ? 'rgba(59, 130, 246, 0.25)' : 'rgba(96, 165, 250, 0.18)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash(ring === 1 ? [12, 10] : ring === 2 ? [6, 16] : []);
+          ctx.arc(cx, cy, ringRadius, time * (ring % 2 === 0 ? 0.3 : -0.2), time * (ring % 2 === 0 ? 0.3 : -0.2) + Math.PI * 1.85);
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        ctx.restore();
+      } else if (wallpaper.id === 'aurora-borealis') {
         // Flowing Aurora Ribbons
         ctx.save();
         ctx.globalCompositeOperation = 'screen';

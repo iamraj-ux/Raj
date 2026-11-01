@@ -27,6 +27,16 @@ export interface WallpaperItem {
 
 export const COSMIC_WALLPAPERS: WallpaperItem[] = [
   {
+    id: 'raj-expo-digitals-live',
+    name: 'Raj Expo Digitals',
+    category: 'cyber',
+    description: 'Official flagship Raj Expo Digitals live background with pulsing holographic energy core, celestial particle matrix, and cyber cyan ionization.',
+    gradientPreview: 'from-blue-950 via-slate-950 to-cyan-950',
+    primaryColor: '#06b6d4',
+    secondaryColor: '#3b82f6',
+    accentColor: '#22d3ee'
+  },
+  {
     id: 'deep-space-nebula',
     name: 'Deep Space Nebula',
     category: 'nebula',
@@ -192,7 +202,7 @@ export interface SystemSettingsState {
 }
 
 export const DEFAULT_SETTINGS: SystemSettingsState = {
-  activeWallpaperId: 'deep-space-nebula',
+  activeWallpaperId: 'raj-expo-digitals-live',
   themeId: 'cyan',
   showScanlines: true,
   showHudVignette: true,

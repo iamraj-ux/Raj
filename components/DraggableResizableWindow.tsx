@@ -105,30 +105,31 @@ export const DraggableResizableWindow: React.FC<DraggableResizableWindowProps> =
       className="fixed inset-0 pointer-events-none flex items-center justify-center p-2 sm:p-4"
       style={{ zIndex }}
     >
-      {/* Background scrim / overlay for focus (clickable to close if minimized or standard) */}
+      {/* Background scrim / overlay for focus with deep frosted blur */}
       {!isMinimized && (
         <div 
           onClick={onClose} 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto transition-opacity" 
+          className="fixed inset-0 bg-black/60 backdrop-blur-md pointer-events-auto transition-opacity" 
         />
       )}
 
-      {/* Main Window */}
+      {/* Main Window with Blurred Glass Backdrop and Spring Transition */}
       <motion.div
         drag={!isMaximized}
         dragControls={dragControls}
         dragListener={false}
         dragMomentum={false}
-        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        initial={{ opacity: 0, scale: 0.9, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        exit={{ opacity: 0, scale: 0.9, y: 24 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 340 }}
         style={{
           width: isMaximized ? '96vw' : `${size.width}px`,
           height: isMinimized ? 'auto' : isMaximized ? '92vh' : `${size.height}px`,
           maxWidth: isMaximized ? '96vw' : '96vw',
           maxHeight: isMinimized ? 'auto' : isMaximized ? '92vh' : '92vh'
         }}
-        className={`pointer-events-auto bg-slate-950/95 border-2 border-cyan-500/40 rounded-3xl shadow-[0_0_60px_rgba(6,182,212,0.35)] flex flex-col relative overflow-hidden backdrop-blur-2xl font-mono text-xs select-none transition-all duration-150 ${className}`}
+        className={`pointer-events-auto bg-slate-950/85 border border-white/20 rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.7)] flex flex-col relative overflow-hidden backdrop-blur-3xl font-mono text-xs select-none transition-shadow duration-200 ${className}`}
       >
         {/* WINDOW HEADER & DRAG BAR */}
         <div
