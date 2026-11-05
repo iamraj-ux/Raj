@@ -46,6 +46,7 @@ import { AccountConfigModal } from './components/AccountConfigModal';
 import { TaskbarDock, type AppId } from './components/TaskbarDock';
 import { CosmicWallpaperCanvas } from './components/CosmicWallpaperCanvas';
 import { DesktopWorkspace } from './components/DesktopWorkspace';
+import { Windows10Desktop } from './components/windows10/Windows10Desktop';
 import { WallpaperSettingsModal } from './components/WallpaperSettingsModal';
 import { 
   getSyncedDefaultSettings, 
@@ -1370,30 +1371,21 @@ function App() {
         onClose={() => setIsActivitiesModalOpen(false)} 
       />
       
-      {/* JARVIS Circular HUD Element */}
-      <div className="fixed top-8 left-8 z-50 pointer-events-none hidden xl:block">
-        <div className="relative w-48 h-48">
-          <div className="jarvis-ring w-48 h-48 animate-spin-slow opacity-20" />
-          <div className="jarvis-ring w-40 h-40 top-4 left-4 animate-spin-reverse opacity-40 border-dashed border-cyan-400" />
-          <div className="jarvis-ring w-32 h-32 top-8 left-8 animate-pulse-cyan opacity-60 border-2 border-cyan-500/30" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-[10px] font-black text-cyan-400 tracking-[0.3em] uppercase">Natasha</p>
-              <p className="text-[8px] font-bold text-cyan-500/60 uppercase">Neural Stream</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Primary Desktop OS Workspace matching User's Provided UI Screenshot */}
-      <DesktopWorkspace
-        onOpenApp={(appId) => handleToggleApp(appId as AppId)}
-        onLockScreen={() => setIsLocked(true)}
-        serverOnlineStatus={serverOnlineStatus}
+      {/* Full-screen Authentic Windows 10 Desktop */}
+      <Windows10Desktop
+        onOpenServerHub={() => handleToggleApp('server_hub')}
+        onOpenPeopleDb={() => handleToggleApp('people_db')}
+        onOpenPdfCounter={() => handleToggleApp('pdf_counter')}
+        onOpenPromptStudio={() => handleToggleApp('prompt_studio')}
+        onOpenGitHubSync={() => handleToggleApp('github_sync')}
+        onOpenActivitiesLog={() => handleToggleApp('activities_log')}
+        onOpenWhatsAppViewer={() => handleToggleApp('whatsapp_viewer')}
+        onOpenCloudinaryDb={() => handleToggleApp('cloudinary_db')}
         onOpenClockOverview={() => setIsClockOverviewOpen(true)}
         onOpenNatashaChat={() => {
           window.dispatchEvent(new CustomEvent('natasha-open-chat'));
         }}
+        onLockScreen={() => setIsLocked(true)}
       />
 
       <div className="max-w-6xl mx-auto relative z-10">
@@ -1405,6 +1397,7 @@ function App() {
           <AnimatePresence>
             {errors.length > 0 && (
               <motion.div 
+                key="global-errors-alert"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}

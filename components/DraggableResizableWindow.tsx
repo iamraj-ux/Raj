@@ -124,100 +124,90 @@ export const DraggableResizableWindow: React.FC<DraggableResizableWindowProps> =
         exit={{ opacity: 0, scale: 0.9, y: 24 }}
         transition={{ type: 'spring', damping: 26, stiffness: 340 }}
         style={{
-          width: isMaximized ? '96vw' : `${size.width}px`,
-          height: isMinimized ? 'auto' : isMaximized ? '92vh' : `${size.height}px`,
-          maxWidth: isMaximized ? '96vw' : '96vw',
-          maxHeight: isMinimized ? 'auto' : isMaximized ? '92vh' : '92vh'
+          width: isMaximized ? '100vw' : `${size.width}px`,
+          height: isMinimized ? 'auto' : isMaximized ? 'calc(100vh - 40px)' : `${size.height}px`,
+          maxWidth: isMaximized ? '100vw' : '98vw',
+          maxHeight: isMinimized ? 'auto' : isMaximized ? 'calc(100vh - 40px)' : '94vh',
+          top: isMaximized ? 0 : undefined,
+          left: isMaximized ? 0 : undefined
         }}
-        className={`pointer-events-auto bg-slate-950/85 border border-white/20 rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.7)] flex flex-col relative overflow-hidden backdrop-blur-3xl font-mono text-xs select-none transition-shadow duration-200 ${className}`}
+        className={`pointer-events-auto bg-[#191919] border border-[#0078d7] shadow-[0_12px_45px_rgba(0,0,0,0.75),0_0_0_1px_rgba(0,120,215,0.8)] flex flex-col relative overflow-hidden font-sans text-xs select-none ${className}`}
       >
-        {/* WINDOW HEADER & DRAG BAR */}
+        {/* AUTHENTIC WINDOWS 10 TITLE BAR (32px) */}
         <div
           onPointerDown={(e) => !isMaximized && dragControls.start(e)}
-          className={`px-4 py-3 bg-slate-900/90 border-b border-cyan-500/30 flex items-center justify-between gap-3 shrink-0 ${
-            !isMaximized ? 'cursor-grab active:cursor-grabbing hover:bg-slate-900' : ''
+          onDoubleClick={() => setIsMaximized(!isMaximized)}
+          className={`h-8 px-3 bg-[#181818] border-b border-[#333333] flex items-center justify-between gap-2 shrink-0 ${
+            !isMaximized ? 'cursor-default' : ''
           }`}
-          title={!isMaximized ? "Drag to relocate window" : ""}
+          title={!isMaximized ? "Drag to move window" : ""}
         >
           {/* Title & Icon */}
-          <div className="flex items-center gap-2.5 truncate">
-            {!isMaximized && (
-              <GripHorizontal className="w-4 h-4 text-cyan-400/60 shrink-0" />
-            )}
+          <div className="flex items-center gap-2.5 truncate max-w-[calc(100%-140px)]">
             {icon && (
-              <div className="p-1.5 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-400 shrink-0">
+              <div className="w-4 h-4 flex items-center justify-center shrink-0">
                 {icon}
               </div>
             )}
             <div className="truncate">
-              <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider truncate">
+              <span className="text-[12px] font-medium text-slate-100 truncate">
                 {title}
-              </h3>
+              </span>
               {subtitle && (
-                <p className="text-[9px] text-cyan-400/70 truncate hidden sm:block">
-                  {subtitle}
-                </p>
+                <span className="text-[10px] text-slate-400 truncate ml-2 hidden sm:inline">
+                  — {subtitle}
+                </span>
               )}
             </div>
           </div>
 
-          {/* Header Action Tools & Window Controls */}
-          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+          {/* Windows 10 Window Control Buttons (Minimize, Maximize, Close) */}
+          <div className="flex items-center h-full shrink-0">
             {headerActions}
 
-            {/* Quick Scroll Buttons */}
-            {!isMinimized && (
-              <div className="hidden sm:flex items-center gap-1 bg-slate-950 px-1 py-0.5 rounded-lg border border-cyan-500/20">
-                <button
-                  type="button"
-                  onClick={scrollToTop}
-                  className="p-1 text-cyan-400 hover:text-white rounded hover:bg-cyan-500/20 transition-all cursor-pointer"
-                  title="Scroll to Top"
-                >
-                  <ChevronUp className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={scrollToBottom}
-                  className="p-1 text-cyan-400 hover:text-white rounded hover:bg-cyan-500/20 transition-all cursor-pointer"
-                  title="Scroll to Bottom"
-                >
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-
-            {/* Minimize */}
+            {/* Minimize Button */}
             <button
               type="button"
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1.5 rounded-lg bg-slate-900 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 transition-all cursor-pointer"
-              title={isMinimized ? "Restore Window" : "Minimise Window"}
+              className="w-[46px] h-full flex items-center justify-center hover:bg-white/10 active:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title="Minimize"
             >
-              <Minimize2 className="w-3.5 h-3.5" />
+              <span className="w-2.5 h-[1px] bg-current inline-block" />
             </button>
 
-            {/* Maximize */}
+            {/* Maximize / Restore Button */}
             <button
               type="button"
               onClick={() => {
                 setIsMaximized(!isMaximized);
                 if (isMinimized) setIsMinimized(false);
               }}
-              className="p-1.5 rounded-lg bg-slate-900 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950 transition-all cursor-pointer"
-              title={isMaximized ? "Restore Size" : "Maximise Window"}
+              className="w-[46px] h-full flex items-center justify-center hover:bg-white/10 active:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title={isMaximized ? "Restore Down" : "Maximize"}
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              {isMaximized ? (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+                  <rect x="2.5" y="0.5" width="7" height="7" />
+                  <path d="M0.5,2.5 L0.5,9.5 L7.5,9.5 L7.5,7.5" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+                  <rect x="0.5" y="0.5" width="9" height="9" />
+                </svg>
+              )}
             </button>
 
-            {/* Close */}
+            {/* Close Button (Classic Windows 10 Red Hover) */}
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-slate-900 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
-              title="Close Window"
+              className="w-[46px] h-full flex items-center justify-center hover:bg-[#e81123] active:bg-[#c4101e] text-slate-300 hover:text-white transition-colors cursor-pointer"
+              title="Close"
             >
-              <X className="w-3.5 h-3.5" />
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
+                <line x1="0.5" y1="0.5" x2="9.5" y2="9.5" />
+                <line x1="9.5" y1="0.5" x2="0.5" y2="9.5" />
+              </svg>
             </button>
           </div>
         </div>

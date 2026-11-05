@@ -836,11 +836,11 @@ export const DesktopWorkspace: React.FC<DesktopWorkspaceProps> = ({
                   <ExternalLink className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
                 </div>
                 <div className="text-left">
-                  <div className="text-xs font-black tracking-wide">Server external viewer</div>
-                  <div className="text-[9px] text-cyan-100/80 font-normal">Open App In New Tab (Full Screen)</div>
+                  <div className="text-xs font-black tracking-wide">Go to server</div>
+                  <div className="text-[9px] text-cyan-100/80 font-normal">Open the same app in new tab</div>
                 </div>
               </div>
-              <Maximize className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+              <ExternalLink className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
             </motion.button>
 
             {/* Quick Applications Grid */}

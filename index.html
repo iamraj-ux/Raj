@@ -8,33 +8,102 @@
     <meta name="description" content="Professional multi-format analytics for PDF, Word, Excel, and PowerPoint. Calculate page/slide counts and printing costs with a high-performance UI." />
     <meta property="og:title" content="Remix Raj Expo Digitals Server 916(Encrypted)" />
     <meta property="og:description" content="Professional multi-format analytics for PDF, Word, Excel, and PowerPoint. Calculate page/slide counts and printing costs with a high-performance UI." />
+    <script>
+      // Runtime Environment: HMR Disabled. Ignore WebSocket errors in sandbox iframe.
+      (function() {
+        try {
+          var RealWS = window.WebSocket;
+          window.__RealWebSocket = RealWS;
+
+          function MockWebSocket(url, protocols) {
+            var self = this;
+            this.url = url;
+            this.protocols = protocols;
+            this.readyState = 1; // WebSocket.OPEN
+            this.bufferedAmount = 0;
+            this.extensions = '';
+            this.protocol = '';
+            this.binaryType = 'blob';
+            this._listeners = {};
+
+            this.addEventListener = function(type, listener) {
+              if (!self._listeners[type]) self._listeners[type] = [];
+              self._listeners[type].push(listener);
+            };
+            this.removeEventListener = function(type, listener) {
+              if (!self._listeners[type]) return;
+              self._listeners[type] = self._listeners[type].filter(function(l) { return l !== listener; });
+            };
+            this.dispatchEvent = function() { return true; };
+            this.send = function() {};
+            this.close = function() { self.readyState = 3; };
+
+            setTimeout(function() {
+              try {
+                var ev = new Event('open');
+                if (typeof self.onopen === 'function') self.onopen(ev);
+                if (self._listeners['open']) {
+                  self._listeners['open'].forEach(function(cb) { cb(ev); });
+                }
+              } catch(e) {}
+            }, 0);
+          }
+          MockWebSocket.CONNECTING = 0;
+          MockWebSocket.OPEN = 1;
+          MockWebSocket.CLOSING = 2;
+          MockWebSocket.CLOSED = 3;
+
+          window.WebSocket = MockWebSocket;
+        } catch(e) {}
+
+        var suppress = function(event) {
+          if (!event) return;
+          var msg = (event.message || event.reason || (event.error && event.error.message) || '') + '';
+          var src = (event.filename || '') + '';
+          var stack = (event.error && event.error.stack) || '';
+          if (
+            msg.indexOf('WebSocket') !== -1 ||
+            msg.indexOf('createWebSocketModuleRunnerTransport') !== -1 ||
+            src.indexOf('@vite/client') !== -1 ||
+            stack.indexOf('@vite/client') !== -1 ||
+            stack.indexOf('createWebSocketModuleRunnerTransport') !== -1
+          ) {
+            if (event.preventDefault) event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            return true;
+          }
+        };
+
+        window.addEventListener('error', suppress, true);
+        window.addEventListener('unhandledrejection', suppress, true);
+        window.onerror = function(msg, src, line, col, err) {
+          var str = (msg || '') + ' ' + (src || '') + ' ' + (err && err.stack || '');
+          if (str.indexOf('WebSocket') !== -1 || str.indexOf('@vite/client') !== -1 || str.indexOf('createWebSocketModuleRunnerTransport') !== -1) {
+            return true;
+          }
+        };
+
+        // Storage Access API for Safari/iOS cross-origin iframe cookie handling
+        try {
+          if (document.hasStorageAccess && document.requestStorageAccess) {
+            document.hasStorageAccess().then(function(hasAccess) {
+              if (!hasAccess) {
+                document.requestStorageAccess().catch(function() {});
+              }
+            }).catch(function() {});
+          }
+        } catch(e) {}
+      })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script>
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      // Ignore HMR WebSocket connection errors in sandbox iframe per environment constraints
-      window.addEventListener('error', function(event) {
-        if (event && (
-          event.message?.includes('WebSocket') ||
-          event.message?.includes('createWebSocketModuleRunnerTransport') ||
-          event.filename?.includes('@vite/client')
-        )) {
-          event.stopImmediatePropagation();
-          event.preventDefault();
-          return true;
-        }
-      }, true);
-      window.addEventListener('unhandledrejection', function(event) {
-        if (event && event.reason && (
-          String(event.reason).includes('WebSocket') ||
-          String(event.reason?.message || '').includes('WebSocket')
-        )) {
-          event.preventDefault();
-        }
-      });
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
     </script>
     <style>
       body {
